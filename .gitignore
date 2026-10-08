@@ -1,0 +1,12 @@
+.DS_Store
+node_modules/
+.expo/
+dist/
+__pycache__/
+*.pyc
+.venv/
+.env
+.env.*
+!.env.example
+*-key.json
+service-account*.json
