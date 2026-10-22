@@ -53,39 +53,44 @@ Solution keys are stored as restricted chunks. They are only searched when a stu
 
 ## API overview
 
+Full details for each endpoint, including the screens that use it and an example request and response, are in [`nudge-api/`](nudge-api/).
+
+Every request except login sends `Authorization: Bearer {token}`. After login, students use `/student/...` and teachers use `/teacher/...`. The backend rejects a student token on a teacher endpoint and the other way around.
+
+**Shared**
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/auth/login` | Sign in as a student or teacher |
+
 **Student**
 
-| Request | Description |
-|---|---|
-| `GET /me` | Signed-in user |
-| `GET /me/home` | "Up next" assignment and the student's courses |
-| `POST /enrollments` | Join a course with a code |
-| `GET /me/courses` | Student's courses |
-| `GET /courses/{courseId}/materials` | A course's materials |
-| `GET /materials/{materialId}/link` | Temporary link to open a file |
-| `GET /threads` | List or search past chats |
-| `POST /threads` | Start a chat |
-| `GET /threads/{threadId}/messages` | Messages in a chat |
-| `POST /threads/{threadId}/messages` | Ask a question (optional photo) and get Nudge's reply |
-| `POST /messages/{messageId}/flag` | Report an answer as wrong |
-| `GET /me/stats` | Questions asked, problems solved, photos checked |
-| `PATCH /me/notifications` | Turn reminders on or off |
+| Method | Path | Description |
+|---|---|---|
+| GET | `/student/me` | Signed-in student, their stats and notification switches |
+| PATCH | `/student/me` | Turn notification switches on or off |
+| GET | `/student/courses` | "Up next" assignment and the student's courses with due badges |
+| POST | `/student/courses/join` | Join a course with a 6-character code |
+| GET | `/student/courses/{courseId}` | One course and its materials (never restricted files) |
+| GET | `/student/materials/{materialId}/link` | Temporary 15-minute link to open a file |
+| GET | `/student/threads` | Past chats, newest first (`?q=` to search by title) |
+| POST | `/student/threads` | Start a chat in a course, optionally tied to an assignment |
+| GET | `/student/threads/{threadId}` | One chat and all its messages, with citations |
+| POST | `/student/threads/{threadId}/messages` | Ask a question with an optional photo (multipart) and get Nudge's reply |
+| POST | `/student/messages/{messageId}/flag` | Report a Nudge reply |
 
 **Teacher**
 
-| Request | Description |
-|---|---|
-| `GET /teacher/courses` | Teacher's courses by semester |
-| `POST /courses` | Create a course and its join code |
-| `POST /courses/{courseId}/copy` | Copy a past course |
-| `POST /courses/{courseId}/materials` | Upload a file |
-| `DELETE /materials/{materialId}` | Remove a file and its chunks |
-| `GET /courses/{courseId}/settings` | Read Nudge's settings for the course |
-| `PATCH /courses/{courseId}/settings` | Change Nudge's settings |
-| `GET /courses/{courseId}/summary` | Question count, active students, flagged count |
-| `GET /courses/{courseId}/trending` | Topics students ask about most |
-| `GET /courses/{courseId}/flags` | Answers waiting for review |
-| `PATCH /flags/{flagId}` | Correct and close a flagged answer |
+| Method | Path | Description |
+|---|---|---|
+| GET | `/teacher/me` | Signed-in teacher, profile counts and notification switches |
+| PATCH | `/teacher/me` | Turn notification switches on or off |
+| GET | `/teacher/courses` | Courses grouped by semester, with material and student counts |
+| POST | `/teacher/courses` | Create a course and get its join code (send `copyFrom` to reuse a past course) |
+| GET | `/teacher/courses/{courseId}` | One course with its join code, Nudge settings and all materials |
+| PATCH | `/teacher/courses/{courseId}/settings` | Change how Nudge helps in the course |
+| POST | `/teacher/courses/{courseId}/materials` | Upload a PDF or photo (multipart); starts as `processing`, then `ready` |
+| GET | `/teacher/courses/{courseId}/dashboard` | Question count, active students, flagged count, trending topics and flagged answers to review |
 
 ## Data model
 
