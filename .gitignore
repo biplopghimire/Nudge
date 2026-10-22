@@ -10,3 +10,5 @@ __pycache__/
 !.env.example
 *-key.json
 service-account*.json
+.pytest_cache/
+.ruff_cache/

@@ -53,6 +53,16 @@ Solution keys are stored as restricted chunks. They are only searched when a stu
 
 ## API overview
 
+The backend is a FastAPI app in [`nudge-api/`](nudge-api/). Every endpoint works today against mock data (no database or API keys needed):
+
+```bash
+cd nudge-api && python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+uvicorn app.main:app --reload   # docs at http://localhost:8000/docs
+```
+
+See [`nudge-api/README.md`](nudge-api/README.md) for mock accounts, how the code is organized and how to swap in Postgres, Gemini and Cloud Storage.
+
 Full details for each endpoint, including the screens that use it and an example request and response, are in [`nudge-api/`](nudge-api/).
 
 Every request except login sends `Authorization: Bearer {token}`. After login, students use `/student/...` and teachers use `/teacher/...`. The backend rejects a student token on a teacher endpoint and the other way around.
