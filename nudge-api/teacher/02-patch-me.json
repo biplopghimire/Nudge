@@ -1,0 +1,24 @@
+{
+  "method": "PATCH",
+  "path": "/teacher/me",
+  "description": "Turn the teacher's notification switches on or off. Send only the switches that changed.",
+  "usedOn": [
+    "Teacher · Profile"
+  ],
+  "request": {
+    "body": {
+      "notifications": {
+        "weeklyDigest": false
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "notifications": {
+        "flaggedAnswers": true,
+        "weeklyDigest": false
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "method": "POST",
+  "path": "/auth/login",
+  "description": "Sign in as a student or teacher. The returned user.role tells the app whether to use the /student or /teacher endpoints. The token is stored in expo-secure-store and sent as 'Authorization: Bearer {token}' on every other request.",
+  "usedOn": [
+    "Sign in"
+  ],
+  "request": {
+    "body": {
+      "email": "samlee@andrew.cmu.edu",
+      "password": "••••••••"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "user": {
+        "id": "a0000000-0000-4000-8000-000000000001",
+        "name": "Sam Lee",
+        "email": "samlee@andrew.cmu.edu",
+        "role": "student"
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "method": "POST",
+  "path": "/student/threads",
+  "description": "Start a new chat in a course, optionally tied to an assignment. Used by the Start button on Home and the new chat button.",
+  "usedOn": [
+    "Student 1 · Home (Start)",
+    "Student 5 · Recent chats (new chat)"
+  ],
+  "request": {
+    "body": {
+      "courseId": "c0000000-0272-4000-8000-000000000001",
+      "assignmentId": "b0000000-0004-4000-8000-000000000001",
+      "title": "Problem 3"
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "thread": {
+        "id": "e0000000-0003-4000-8000-000000000001",
+        "courseId": "c0000000-0272-4000-8000-000000000001",
+        "courseCode": "67-272",
+        "assignmentId": "b0000000-0004-4000-8000-000000000001",
+        "title": "Problem 3",
+        "updatedAt": "2026-10-04T21:09:50Z"
+      }
+    }
+  }
+}

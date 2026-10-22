@@ -1,0 +1,23 @@
+{
+  "method": "GET",
+  "path": "/student/materials/{materialId}/link",
+  "description": "Get a temporary link (15 minutes) to open a file. Used when a student taps a citation like 'Lecture 6'. The backend checks the student is enrolled and never returns links to restricted files.",
+  "usedOn": [
+    "Student 3 · Chat (citation chips)",
+    "File viewer",
+    "Student · Course materials"
+  ],
+  "request": {
+    "params": {
+      "materialId": "d0000000-0006-4000-8000-000000000001"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "url": "https://storage.googleapis.com/nudge-course-files/courses/c0000000-0272-4000-8000-000000000001/materials/d0000000-0006-4000-8000-000000000001/Lecture%206%20-%20Substitution.pdf?X-Goog-Expires=900&X-Goog-Signature=...",
+      "page": 4,
+      "expiresAt": "2026-10-04T21:28:00Z"
+    }
+  }
+}

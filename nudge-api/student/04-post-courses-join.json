@@ -1,0 +1,33 @@
+{
+  "method": "POST",
+  "path": "/student/courses/join",
+  "description": "Student joins a course with the 6-character code from their teacher.",
+  "usedOn": [
+    "Student 2 · Join a course"
+  ],
+  "request": {
+    "body": {
+      "joinCode": "K7M4QX"
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "course": {
+        "id": "c0000000-0272-4000-8000-000000000001",
+        "code": "67-272",
+        "section": "Sec 1",
+        "teacherName": "Prof. H",
+        "nextDue": "PS 4 · Thu",
+        "currentAssignmentTitle": "Problem Set 4"
+      }
+    }
+  },
+  "errorExample": {
+    "status": 404,
+    "body": {
+      "error": "invalid_code",
+      "message": "No course matches that code. Check it with your teacher."
+    }
+  }
+}

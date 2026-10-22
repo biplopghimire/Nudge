@@ -1,0 +1,38 @@
+{
+  "method": "POST",
+  "path": "/teacher/courses",
+  "description": "Teacher creates a course and gets its join code. To reuse a past course, send copyFrom with the past course id and what to copy. Leave copyFrom out to start from scratch.",
+  "usedOn": [
+    "Teacher · Create course",
+    "Teacher · New course",
+    "Teacher · Reuse a course"
+  ],
+  "request": {
+    "body": {
+      "code": "67-272",
+      "section": "Sec 1",
+      "semester": "Fall 2026",
+      "copyFrom": {
+        "courseId": "c0000000-0272-4000-8000-000000000a26",
+        "materials": true,
+        "settings": true,
+        "shiftDeadlines": true
+      }
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "course": {
+        "id": "c0000000-0272-4000-8000-000000000001",
+        "code": "67-272",
+        "section": "Sec 1",
+        "semester": "Fall 2026",
+        "teacherName": "Prof. H",
+        "joinCode": "K7M4QX",
+        "materialCount": 16,
+        "studentCount": 0
+      }
+    }
+  }
+}

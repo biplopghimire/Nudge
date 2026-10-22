@@ -1,0 +1,74 @@
+{
+  "method": "GET",
+  "path": "/teacher/courses/{courseId}",
+  "description": "Get one course with its join code, Nudge settings and all materials, including restricted ones.",
+  "usedOn": [
+    "Teacher · New course (file list)",
+    "Teacher · Options",
+    "Share join code"
+  ],
+  "request": {
+    "params": {
+      "courseId": "c0000000-0272-4000-8000-000000000001"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "course": {
+        "id": "c0000000-0272-4000-8000-000000000001",
+        "code": "67-272",
+        "section": "Sec 1",
+        "semester": "Fall 2026",
+        "teacherName": "Prof. H",
+        "joinCode": "K7M4QX",
+        "materialCount": 14,
+        "studentCount": 42
+      },
+      "settings": {
+        "hintsOnly": true,
+        "useSolutionKeys": true,
+        "citeMaterials": true,
+        "studentDeadlineReminders": false
+      },
+      "materials": [
+        {
+          "id": "d0000000-0006-4000-8000-000000000001",
+          "courseId": "c0000000-0272-4000-8000-000000000001",
+          "title": "Lecture 6 - Substitution.pdf",
+          "type": "slides",
+          "sizeBytes": 2516582,
+          "restricted": false,
+          "status": "ready"
+        },
+        {
+          "id": "d0000000-0004-4000-8000-000000000002",
+          "courseId": "c0000000-0272-4000-8000-000000000001",
+          "title": "Problem Set 4.pdf",
+          "type": "homework",
+          "sizeBytes": 317440,
+          "restricted": false,
+          "status": "ready"
+        },
+        {
+          "id": "d0000000-0001-4000-8000-000000000003",
+          "courseId": "c0000000-0272-4000-8000-000000000001",
+          "title": "Syllabus.pdf",
+          "type": "syllabus",
+          "sizeBytes": 184320,
+          "restricted": false,
+          "status": "ready"
+        },
+        {
+          "id": "d0000000-0004-4000-8000-000000000004",
+          "courseId": "c0000000-0272-4000-8000-000000000001",
+          "title": "PS 4 Solutions.pdf",
+          "type": "solution_key",
+          "sizeBytes": 402112,
+          "restricted": true,
+          "status": "ready"
+        }
+      ]
+    }
+  }
+}

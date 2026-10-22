@@ -1,0 +1,34 @@
+{
+  "method": "POST",
+  "path": "/student/messages/{messageId}/flag",
+  "description": "Student reports a Nudge reply. The teacher sees it under Needs your review. The response includes office hours so the flag sheet can offer them.",
+  "usedOn": [
+    "Student 3 · Chat (flag button)",
+    "Flag sheet"
+  ],
+  "request": {
+    "params": {
+      "messageId": "f0000000-0000-4000-8000-000000000004"
+    },
+    "body": {
+      "reason": "wrong answer",
+      "note": "The lecture used a different substitution."
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "flag": {
+        "id": "90000000-0000-4000-8000-000000000001",
+        "messageId": "f0000000-0000-4000-8000-000000000004",
+        "courseId": "c0000000-0272-4000-8000-000000000001",
+        "assignmentTitle": "PS 4",
+        "flagCount": 1,
+        "status": "open",
+        "correction": null,
+        "createdAt": "2026-10-04T21:15:00Z"
+      },
+      "officeHours": "Tue and Thu, 4:00pm to 5:30pm"
+    }
+  }
+}

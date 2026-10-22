@@ -1,0 +1,52 @@
+{
+  "method": "GET",
+  "path": "/student/threads",
+  "description": "List the student's past chats, newest first. Add ?q= to search by title. The app groups them into Today and This week.",
+  "usedOn": [
+    "Student 5 · Recent chats"
+  ],
+  "request": {
+    "query": {
+      "q": "(optional) problem"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "threads": [
+        {
+          "id": "e0000000-0003-4000-8000-000000000001",
+          "courseId": "c0000000-0272-4000-8000-000000000001",
+          "courseCode": "67-272",
+          "assignmentId": "b0000000-0004-4000-8000-000000000001",
+          "title": "Problem 3",
+          "updatedAt": "2026-10-04T21:12:36Z"
+        },
+        {
+          "id": "e0000000-0000-4000-8000-000000000002",
+          "courseId": "c0000000-0213-4000-8000-00000000000a",
+          "courseCode": "15-213",
+          "assignmentId": "b0000000-0213-4000-8000-000000000003",
+          "title": "Lab 3 setup",
+          "updatedAt": "2026-10-04T20:14:00Z"
+        },
+        {
+          "id": "e0000000-0000-4000-8000-000000000003",
+          "courseId": "c0000000-0272-4000-8000-000000000001",
+          "courseCode": "67-272",
+          "assignmentId": null,
+          "title": "Lecture 6 review",
+          "updatedAt": "2026-09-29T19:40:00Z"
+        },
+        {
+          "id": "e0000000-0000-4000-8000-000000000004",
+          "courseId": "c0000000-0272-4000-8000-000000000001",
+          "courseCode": "67-272",
+          "assignmentId": null,
+          "title": "PS 3 · Question 5",
+          "updatedAt": "2026-09-28T23:05:00Z"
+        }
+      ]
+    }
+  }
+}

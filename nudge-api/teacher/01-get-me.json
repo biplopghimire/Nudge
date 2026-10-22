@@ -1,0 +1,32 @@
+{
+  "method": "GET",
+  "path": "/teacher/me",
+  "description": "Get the signed-in teacher, their profile counts and their notification switches.",
+  "usedOn": [
+    "Teacher · Profile"
+  ],
+  "request": {
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "user": {
+        "id": "a0000000-0000-4000-8000-000000000002",
+        "name": "Prof. H",
+        "email": "profh@cmu.edu",
+        "role": "teacher",
+        "department": "Information Systems"
+      },
+      "stats": {
+        "sectionsNow": 2,
+        "students": 80,
+        "semesters": 5
+      },
+      "notifications": {
+        "flaggedAnswers": true,
+        "weeklyDigest": true
+      }
+    }
+  }
+}

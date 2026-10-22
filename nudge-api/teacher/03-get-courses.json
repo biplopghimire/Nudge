@@ -1,0 +1,108 @@
+{
+  "method": "GET",
+  "path": "/teacher/courses",
+  "description": "List the teacher's courses grouped by semester, with material and student counts.",
+  "usedOn": [
+    "Teacher · Courses",
+    "Teacher · Home (course picker)",
+    "Teacher · Reuse a course",
+    "Teacher · Profile"
+  ],
+  "request": {
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "semesters": [
+        {
+          "name": "Fall 2026",
+          "isCurrent": true,
+          "courses": [
+            {
+              "id": "c0000000-0272-4000-8000-000000000001",
+              "code": "67-272",
+              "section": "Sec 1",
+              "semester": "Fall 2026",
+              "teacherName": "Prof. H",
+              "materialCount": 14,
+              "studentCount": 42
+            },
+            {
+              "id": "c0000000-0272-4000-8000-000000000002",
+              "code": "67-272",
+              "section": "Sec 2",
+              "semester": "Fall 2026",
+              "teacherName": "Prof. H",
+              "materialCount": 9,
+              "studentCount": 38
+            }
+          ]
+        },
+        {
+          "name": "Spring 2026",
+          "isCurrent": false,
+          "courses": [
+            {
+              "id": "c0000000-0272-4000-8000-000000000a26",
+              "code": "67-272",
+              "section": "Sec 1",
+              "semester": "Spring 2026",
+              "teacherName": "Prof. H",
+              "materialCount": 16,
+              "studentCount": 40
+            },
+            {
+              "id": "c0000000-0213-4000-8000-000000000a26",
+              "code": "15-213",
+              "section": "Sec A",
+              "semester": "Spring 2026",
+              "teacherName": "Prof. H",
+              "materialCount": 11,
+              "studentCount": 24
+            }
+          ]
+        },
+        {
+          "name": "Fall 2025",
+          "isCurrent": false,
+          "courses": [
+            {
+              "id": "c0000000-0272-4000-8000-000000000f25",
+              "code": "67-272",
+              "section": "Sec 1",
+              "semester": "Fall 2025",
+              "teacherName": "Prof. H",
+              "materialCount": 15,
+              "studentCount": 44
+            },
+            {
+              "id": "c0000000-0213-4000-8000-000000000f25",
+              "code": "15-213",
+              "section": "Sec A",
+              "semester": "Fall 2025",
+              "teacherName": "Prof. H",
+              "materialCount": 10,
+              "studentCount": 22
+            }
+          ]
+        },
+        {
+          "name": "Spring 2025",
+          "isCurrent": false,
+          "courses": [
+            {
+              "id": "c0000000-0272-4000-8000-000000000a25",
+              "code": "67-272",
+              "section": "Sec 1",
+              "semester": "Spring 2025",
+              "teacherName": "Prof. H",
+              "materialCount": 12,
+              "studentCount": 39
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

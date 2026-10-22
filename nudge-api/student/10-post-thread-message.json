@@ -1,0 +1,54 @@
+{
+  "method": "POST",
+  "path": "/student/threads/{threadId}/messages",
+  "description": "Send a question, with an optional photo (multipart/form-data), and get Nudge's reply. Returns the saved student message and the reply with citations.",
+  "usedOn": [
+    "Student 3 · Chat",
+    "Student 4 · + menu",
+    "Student 7 · Camera"
+  ],
+  "request": {
+    "params": {
+      "threadId": "e0000000-0003-4000-8000-000000000001"
+    },
+    "contentType": "multipart/form-data",
+    "body": {
+      "content": "",
+      "photo": "(binary) photo from camera, image/jpeg"
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "studentMessage": {
+        "id": "f0000000-0000-4000-8000-000000000003",
+        "threadId": "e0000000-0003-4000-8000-000000000001",
+        "role": "student",
+        "content": "",
+        "attachmentUrl": "https://storage.googleapis.com/nudge-course-files/uploads/a0000000-0000-4000-8000-000000000001/f0000003.jpg?X-Goog-Expires=900&X-Goog-Signature=...",
+        "citations": [],
+        "createdAt": "2026-10-04T21:12:30Z"
+      },
+      "reply": {
+        "id": "f0000000-0000-4000-8000-000000000004",
+        "threadId": "e0000000-0003-4000-8000-000000000001",
+        "role": "nudge",
+        "content": "Your substitution is right. On the last line, your answer is still in terms of u. What should it be in terms of?",
+        "attachmentUrl": null,
+        "citations": [
+          {
+            "materialId": "d0000000-0006-4000-8000-000000000001",
+            "title": "Lecture 6",
+            "page": 4
+          },
+          {
+            "materialId": "d0000000-0004-4000-8000-000000000002",
+            "title": "PS 4",
+            "page": 1
+          }
+        ],
+        "createdAt": "2026-10-04T21:12:36Z"
+      }
+    }
+  }
+}

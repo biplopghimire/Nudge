@@ -1,0 +1,47 @@
+{
+  "method": "GET",
+  "path": "/teacher/courses/{courseId}/dashboard",
+  "description": "Teacher home for one course: question count, active students, flagged count, trending topics and flagged answers waiting for review.",
+  "usedOn": [
+    "Teacher · Home"
+  ],
+  "request": {
+    "params": {
+      "courseId": "c0000000-0272-4000-8000-000000000001"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "stats": {
+        "questionCount": 48,
+        "activeStudents": 31,
+        "flaggedCount": 2
+      },
+      "trending": [
+        {
+          "id": "70000000-0000-4000-8000-000000000001",
+          "title": "Substitution in PS 4",
+          "studentCount": 12
+        },
+        {
+          "id": "70000000-0000-4000-8000-000000000002",
+          "title": "Chain rule vs. u-sub",
+          "studentCount": 7
+        }
+      ],
+      "needsReview": [
+        {
+          "id": "90000000-0000-4000-8000-000000000001",
+          "messageId": "f0000000-0000-4000-8000-000000000099",
+          "courseId": "c0000000-0272-4000-8000-000000000001",
+          "assignmentTitle": "PS 4 · Q2",
+          "flagCount": 2,
+          "status": "open",
+          "correction": null,
+          "createdAt": "2026-10-04T15:20:00Z"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "method": "PATCH",
+  "path": "/teacher/courses/{courseId}/settings",
+  "description": "Teacher changes how Nudge helps in this course. Send only the switches that changed.",
+  "usedOn": [
+    "Teacher · Options"
+  ],
+  "request": {
+    "params": {
+      "courseId": "c0000000-0272-4000-8000-000000000001"
+    },
+    "body": {
+      "studentDeadlineReminders": true
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "settings": {
+        "hintsOnly": true,
+        "useSolutionKeys": true,
+        "citeMaterials": true,
+        "studentDeadlineReminders": true
+      }
+    }
+  }
+}

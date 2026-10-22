@@ -1,0 +1,34 @@
+{
+  "method": "POST",
+  "path": "/teacher/courses/{courseId}/materials",
+  "description": "Teacher uploads a PDF or photo (multipart/form-data). The file is saved to Google Cloud Storage and comes back with status 'processing'. It changes to 'ready' once it is split into chunks for the AI.",
+  "usedOn": [
+    "Teacher · New course (Add slides, notes, homework)",
+    "Upload progress"
+  ],
+  "request": {
+    "params": {
+      "courseId": "c0000000-0272-4000-8000-000000000001"
+    },
+    "contentType": "multipart/form-data",
+    "body": {
+      "file": "(binary) Lecture 6 - Substitution.pdf",
+      "type": "slides",
+      "restricted": false
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "material": {
+        "id": "d0000000-0006-4000-8000-000000000001",
+        "courseId": "c0000000-0272-4000-8000-000000000001",
+        "title": "Lecture 6 - Substitution.pdf",
+        "type": "slides",
+        "sizeBytes": 2516582,
+        "restricted": false,
+        "status": "processing"
+      }
+    }
+  }
+}

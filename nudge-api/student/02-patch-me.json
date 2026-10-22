@@ -1,0 +1,24 @@
+{
+  "method": "PATCH",
+  "path": "/student/me",
+  "description": "Turn the student's notification switches on or off. Send only the switches that changed.",
+  "usedOn": [
+    "Student 8 · Profile"
+  ],
+  "request": {
+    "body": {
+      "notifications": {
+        "studyNudges": true
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "notifications": {
+        "deadlineReminders": true,
+        "studyNudges": true
+      }
+    }
+  }
+}

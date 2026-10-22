@@ -1,0 +1,43 @@
+{
+  "method": "GET",
+  "path": "/student/courses",
+  "description": "Get the student's Up next assignment and their courses with due badges.",
+  "usedOn": [
+    "Student 1 · Home",
+    "Student 6 · Switch class",
+    "Student 8 · Profile"
+  ],
+  "request": {
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "upNext": {
+        "id": "b0000000-0004-4000-8000-000000000001",
+        "courseId": "c0000000-0272-4000-8000-000000000001",
+        "courseCode": "67-272",
+        "title": "Problem Set 4",
+        "dueAt": "2026-10-08T23:59:00-04:00"
+      },
+      "courses": [
+        {
+          "id": "c0000000-0272-4000-8000-000000000001",
+          "code": "67-272",
+          "section": "Sec 1",
+          "teacherName": "Prof. H",
+          "nextDue": "PS 4 · Thu",
+          "currentAssignmentTitle": "Problem Set 4"
+        },
+        {
+          "id": "c0000000-0213-4000-8000-00000000000a",
+          "code": "15-213",
+          "section": "Sec A",
+          "teacherName": "Prof. K",
+          "nextDue": "Lab 3 · Sun",
+          "currentAssignmentTitle": "Lab 3"
+        }
+      ]
+    }
+  }
+}

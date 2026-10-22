@@ -1,0 +1,31 @@
+{
+  "method": "GET",
+  "path": "/student/me",
+  "description": "Get the signed-in student, their stats and their notification switches.",
+  "usedOn": [
+    "Student 8 · Profile"
+  ],
+  "request": {
+    "body": null
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "user": {
+        "id": "a0000000-0000-4000-8000-000000000001",
+        "name": "Sam Lee",
+        "email": "samlee@andrew.cmu.edu",
+        "role": "student"
+      },
+      "stats": {
+        "questionsAsked": 12,
+        "problemsSolved": 5,
+        "photosChecked": 3
+      },
+      "notifications": {
+        "deadlineReminders": true,
+        "studyNudges": false
+      }
+    }
+  }
+}

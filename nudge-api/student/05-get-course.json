@@ -1,0 +1,56 @@
+{
+  "method": "GET",
+  "path": "/student/courses/{courseId}",
+  "description": "Get one course and its materials. Restricted files such as solution keys are never included.",
+  "usedOn": [
+    "Student · Course materials"
+  ],
+  "request": {
+    "params": {
+      "courseId": "c0000000-0272-4000-8000-000000000001"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "course": {
+        "id": "c0000000-0272-4000-8000-000000000001",
+        "code": "67-272",
+        "section": "Sec 1",
+        "semester": "Fall 2026",
+        "teacherName": "Prof. H",
+        "materialCount": 3,
+        "studentCount": 42
+      },
+      "materials": [
+        {
+          "id": "d0000000-0006-4000-8000-000000000001",
+          "courseId": "c0000000-0272-4000-8000-000000000001",
+          "title": "Lecture 6 - Substitution.pdf",
+          "type": "slides",
+          "sizeBytes": 2516582,
+          "restricted": false,
+          "status": "ready"
+        },
+        {
+          "id": "d0000000-0004-4000-8000-000000000002",
+          "courseId": "c0000000-0272-4000-8000-000000000001",
+          "title": "Problem Set 4.pdf",
+          "type": "homework",
+          "sizeBytes": 317440,
+          "restricted": false,
+          "status": "ready"
+        },
+        {
+          "id": "d0000000-0001-4000-8000-000000000003",
+          "courseId": "c0000000-0272-4000-8000-000000000001",
+          "title": "Syllabus.pdf",
+          "type": "syllabus",
+          "sizeBytes": 184320,
+          "restricted": false,
+          "status": "ready"
+        }
+      ]
+    }
+  }
+}
