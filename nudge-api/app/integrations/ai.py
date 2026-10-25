@@ -4,7 +4,7 @@ The real version (GeminiClient) should:
 - embed: gemini-embedding-2 with output_dimensionality=768
 - transcribe_page: send a page image and ask for clean text, math in LaTeX
 - generate_reply: send SYSTEM_RULES, course settings, chunks, assignment text,
-  the student's photo and the question
+  any attachment (image or PDF) and the question
 """
 
 from abc import ABC, abstractmethod
@@ -29,8 +29,8 @@ class ReplyRequest:
     settings: CourseSettings
     chunks: list[Chunk]
     assignment_text: str | None = None
-    photo: bytes | None = None
-    photo_mime: str | None = None
+    attachment: bytes | None = None  # image or PDF, context for this question only
+    attachment_mime: str | None = None
     history: list[tuple[str, str]] = field(default_factory=list)  # (role, content), oldest first
 
 
@@ -59,8 +59,8 @@ class MockAIClient(AIClient):
                 "Try asking your teacher or bringing it to office hours."
             )
         source = request.chunks[0].heading or "the course material"
-        if request.photo:
-            opener = "Thanks for the photo of your work."
+        if request.attachment:
+            opener = "Thanks for sending your work."
         else:
             opener = "Good question."
         if request.settings.hints_only:

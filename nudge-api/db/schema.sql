@@ -25,7 +25,7 @@ create table courses (
   hints_only  boolean not null default true,
   use_solution_keys boolean not null default false,
   cite_materials    boolean not null default true,
-  student_deadline_reminders boolean not null default true
+  deadline_reminders boolean not null default true  -- on for every student; each can mute it in users.notifications
 );
 
 create table enrollments (
@@ -39,10 +39,10 @@ create table materials (
   id          uuid primary key default gen_random_uuid(),
   course_id   uuid not null references courses(id),
   title       text not null,
-  type        text not null check (type in ('slides', 'notes', 'homework', 'syllabus', 'photo', 'solution_key')),
+  kind        text not null check (kind in ('slides', 'notes', 'homework', 'syllabus', 'photo', 'other')),
   size_bytes  integer not null,
   storage_path text not null,             -- path in Google Cloud Storage
-  restricted  boolean not null default false,
+  restricted  boolean not null default false,   -- solution keys and rubrics
   status      text not null default 'processing' check (status in ('processing', 'ready', 'failed')),
   uploaded_at timestamptz not null default now()
 );
@@ -77,6 +77,7 @@ create table threads (
   user_id       uuid not null references users(id),
   course_id     uuid not null references courses(id),
   assignment_id uuid references assignments(id),
+  owner_role    text not null default 'student' check (owner_role in ('student', 'teacher')),  -- added
   title         text not null,            -- 'Problem 3'
   updated_at    timestamptz not null default now()
 );
@@ -84,9 +85,11 @@ create table threads (
 create table messages (
   id          uuid primary key default gen_random_uuid(),
   thread_id   uuid not null references threads(id) on delete cascade,
-  role        text not null check (role in ('student', 'nudge')),
+  role        text not null check (role in ('student', 'teacher', 'nudge')),
   content     text not null,
-  attachment_path text,                   -- photo in Google Cloud Storage, if any
+  attachment_path text,                   -- image or PDF in Google Cloud Storage, if any
+  attachment_type text check (attachment_type in ('image', 'pdf')),                     -- added
+  attachment_source text check (attachment_source in ('camera', 'library', 'files')),  -- added
   citations   jsonb not null default '[]',  -- [{materialId, title, page}]
   created_at  timestamptz not null default now()
 );

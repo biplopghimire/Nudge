@@ -229,7 +229,9 @@ class InMemoryRepository(Repository):
         return [m for m in self.messages.values() if m.thread_id in thread_ids and m.role == "student"]
 
     def count_student_messages(self, user_id: str, with_photo: bool = False) -> int:
-        return sum(1 for m in self._student_messages(user_id) if not with_photo or m.attachment_path)
+        return sum(
+            1 for m in self._student_messages(user_id) if not with_photo or m.attachment_type == "image"
+        )
 
     def count_assignment_threads(self, user_id: str) -> int:
         return len(
@@ -237,7 +239,9 @@ class InMemoryRepository(Repository):
         )
 
     def course_activity(self, course_id: str, since: datetime) -> tuple[int, int]:
-        threads = {t.id: t for t in self.threads.values() if t.course_id == course_id}
+        threads = {
+            t.id: t for t in self.threads.values() if t.course_id == course_id and t.owner_role == "student"
+        }
         questions = [
             m
             for m in self.messages.values()

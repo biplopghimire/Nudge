@@ -5,6 +5,10 @@
   "usedOn": [
     "Student 8 · Profile"
   ],
+  "types": {
+    "request": null,
+    "response": "GetStudentMeResponse"
+  },
   "request": {
     "body": null
   },

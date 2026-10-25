@@ -13,6 +13,7 @@ from app.integrations.storage import StorageClient
 from app.repositories.base import Repository
 from app.schemas.common import (
     AssignmentOut,
+    AttachmentOut,
     ChatThreadOut,
     CitationOut,
     CourseOut,
@@ -76,6 +77,7 @@ class Views:
             course_id=assignment.course_id,
             course_code=course.code,
             title=assignment.title,
+            short_title=assignment.short_title or assignment.title,
             due_at=assignment.due_at,
         )
 
@@ -84,7 +86,7 @@ class Views:
             id=material.id,
             course_id=material.course_id,
             title=material.title,
-            type=material.type,
+            kind=material.kind,
             size_bytes=material.size_bytes,
             restricted=material.restricted,
             status=material.status,
@@ -97,22 +99,26 @@ class Views:
             course_id=thread.course_id,
             course_code=course.code if course else "",
             assignment_id=thread.assignment_id,
+            owner_role=thread.owner_role,
             title=thread.title,
             updated_at=thread.updated_at,
         )
 
     def message(self, message: Message) -> MessageOut:
-        attachment_url = None
+        attachment = None
         if message.attachment_path:
-            attachment_url, _ = self.storage.signed_url(
+            url, _ = self.storage.signed_url(
                 message.attachment_path, timedelta(minutes=self.settings.signed_url_minutes)
+            )
+            attachment = AttachmentOut(
+                url=url, type=message.attachment_type or "image", source=message.attachment_source or "camera"
             )
         return MessageOut(
             id=message.id,
             thread_id=message.thread_id,
             role=message.role,
             content=message.content,
-            attachment_url=attachment_url,
+            attachment=attachment,
             citations=[
                 CitationOut(material_id=c.material_id, title=c.title, page=c.page)
                 for c in message.citations
@@ -146,5 +152,5 @@ class Views:
             hints_only=s.hints_only,
             use_solution_keys=s.use_solution_keys,
             cite_materials=s.cite_materials,
-            student_deadline_reminders=s.student_deadline_reminders,
+            deadline_reminders=s.deadline_reminders,
         )

@@ -7,6 +7,10 @@
     "Student 6 · Switch class",
     "Student 8 · Profile"
   ],
+  "types": {
+    "request": null,
+    "response": "GetStudentCoursesResponse"
+  },
   "request": {
     "body": null
   },
@@ -18,6 +22,7 @@
         "courseId": "c0000000-0272-4000-8000-000000000001",
         "courseCode": "67-272",
         "title": "Problem Set 4",
+        "shortTitle": "PS 4",
         "dueAt": "2026-10-08T23:59:00-04:00"
       },
       "courses": [

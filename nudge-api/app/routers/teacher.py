@@ -6,9 +6,10 @@ from typing import get_args
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
 
 from app.deps import current_teacher, get_ingestion_service, get_teacher_service
-from app.domain import MaterialType, User
+from app.domain import MaterialKind, User
 from app.errors import bad_request
 from app.schemas.teacher import (
+    CanvasImportRequest,
     CreateCourseRequest,
     DashboardResponse,
     MaterialResponse,
@@ -76,22 +77,22 @@ def upload_material(
     course_id: str,
     background: BackgroundTasks,
     file: UploadFile = File(...),
-    type: str = Form("notes"),
-    restricted: bool = Form(False),
+    kind: str = Form("notes"),
+    restricted: bool = Form(False, description="Solution keys and rubrics: never shown to students"),
     teacher: User = Teacher,
     service: TeacherService = Service,
     ingestion: IngestionService = Depends(get_ingestion_service),
 ):
     """Upload a PDF or photo. It starts as 'processing' and becomes 'ready'."""
-    if type not in get_args(MaterialType):
-        raise bad_request("invalid_type", f"type must be one of: {', '.join(get_args(MaterialType))}")
+    if kind not in get_args(MaterialKind):
+        raise bad_request("invalid_kind", f"kind must be one of: {', '.join(get_args(MaterialKind))}")
     response = service.upload_material(
         teacher,
         course_id,
         file.filename or "Untitled",
         file.file.read(),
         file.content_type,
-        type,
+        kind,
         restricted,
     )
     background.add_task(ingestion.process_material, response.material.id, file.content_type)
@@ -102,3 +103,12 @@ def upload_material(
 def dashboard(course_id: str, teacher: User = Teacher, service: TeacherService = Service):
     """Question count, active students, flagged count, trending topics and answers to review."""
     return service.dashboard(teacher, course_id)
+
+
+@router.post("/courses/{course_id}/canvas/import", status_code=202)
+def canvas_import(
+    course_id: str, body: CanvasImportRequest, teacher: User = Teacher, service: TeacherService = Service
+):
+    """Planned for version 2: import the syllabus, files and deadlines from Canvas.
+    Returns 501 until then."""
+    return service.canvas_import(teacher, course_id, body)

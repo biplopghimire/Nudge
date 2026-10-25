@@ -1,12 +1,17 @@
 {
   "method": "POST",
-  "path": "/student/threads/{threadId}/messages",
-  "description": "Send a question, with an optional photo (multipart/form-data), and get Nudge's reply. Returns the saved student message and the reply with citations.",
+  "path": "/threads/{threadId}/messages",
+  "description": "Send a question, with an optional attachment (multipart/form-data), and get Nudge's reply. The attachment is an image or a PDF and is one-off context for this question only: it is passed to Gemini but not chunked, embedded or added to course materials. \"Hints only\" applies to student threads only. Returns the saved message and the reply with citations.",
   "usedOn": [
     "Student 3 · Chat",
     "Student 4 · + menu",
-    "Student 7 · Camera"
+    "Student 7 · Camera",
+    "Teacher · Chat"
   ],
+  "types": {
+    "request": "SendMessageRequest",
+    "response": "SendMessageResponse"
+  },
   "request": {
     "params": {
       "threadId": "e0000000-0003-4000-8000-000000000001"
@@ -14,18 +19,23 @@
     "contentType": "multipart/form-data",
     "body": {
       "content": "",
-      "photo": "(binary) photo from camera, image/jpeg"
+      "attachment": "(binary) photo from camera, image/jpeg",
+      "attachmentSource": "camera"
     }
   },
   "response": {
     "status": 201,
     "body": {
-      "studentMessage": {
+      "sentMessage": {
         "id": "f0000000-0000-4000-8000-000000000003",
         "threadId": "e0000000-0003-4000-8000-000000000001",
         "role": "student",
         "content": "",
-        "attachmentUrl": "https://storage.googleapis.com/nudge-course-files/uploads/a0000000-0000-4000-8000-000000000001/f0000003.jpg?X-Goog-Expires=900&X-Goog-Signature=...",
+        "attachment": {
+          "url": "https://storage.googleapis.com/nudge-course-files/uploads/a0000000-0000-4000-8000-000000000001/f0000000-0000-4000-8000-000000000003.jpg?X-Goog-Expires=900&X-Goog-Signature=...",
+          "type": "image",
+          "source": "camera"
+        },
         "citations": [],
         "createdAt": "2026-10-04T21:12:30Z"
       },
@@ -34,7 +44,7 @@
         "threadId": "e0000000-0003-4000-8000-000000000001",
         "role": "nudge",
         "content": "Your substitution is right. On the last line, your answer is still in terms of u. What should it be in terms of?",
-        "attachmentUrl": null,
+        "attachment": null,
         "citations": [
           {
             "materialId": "d0000000-0006-4000-8000-000000000001",

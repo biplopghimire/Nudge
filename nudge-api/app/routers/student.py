@@ -1,25 +1,20 @@
 """/student endpoints. Each one checks the token belongs to a student, then
-hands off to StudentService."""
+hands off to StudentService. Chats are shared with teachers, in routers/threads.py."""
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
+from fastapi import APIRouter, Depends, Query
 
 from app.deps import current_student, get_student_service
 from app.domain import User
 from app.schemas.student import (
-    CreateThreadRequest,
     FlagRequest,
     FlagResponse,
     JoinCourseRequest,
     JoinCourseResponse,
     MaterialLinkResponse,
     NotificationsResponse,
-    SendMessageResponse,
     StudentCourseResponse,
     StudentCoursesResponse,
     StudentMeResponse,
-    ThreadDetailResponse,
-    ThreadResponse,
-    ThreadsResponse,
     UpdateStudentMeRequest,
 )
 from app.services.student import StudentService
@@ -69,43 +64,6 @@ def material_link(
 ):
     """A temporary link (15 minutes) to open a file."""
     return service.material_link(student, material_id, page)
-
-
-@router.get("/threads", response_model=ThreadsResponse)
-def list_threads(
-    q: str | None = Query(None, description="Search chat titles"),
-    student: User = Student,
-    service: StudentService = Service,
-):
-    """The student's past chats, newest first."""
-    return service.list_threads(student, q)
-
-
-@router.post("/threads", response_model=ThreadResponse, status_code=201)
-def create_thread(body: CreateThreadRequest, student: User = Student, service: StudentService = Service):
-    """Start a new chat in a course, optionally tied to an assignment."""
-    return service.create_thread(student, body.course_id, body.assignment_id, body.title)
-
-
-@router.get("/threads/{thread_id}", response_model=ThreadDetailResponse)
-def get_thread(thread_id: str, student: User = Student, service: StudentService = Service):
-    """One chat and all its messages, including Nudge's citations."""
-    return service.get_thread(student, thread_id)
-
-
-@router.post("/threads/{thread_id}/messages", response_model=SendMessageResponse, status_code=201)
-def send_message(
-    thread_id: str,
-    content: str = Form(""),
-    photo: UploadFile | None = File(None),
-    student: User = Student,
-    service: StudentService = Service,
-):
-    """Send a question, with an optional photo, and get Nudge's reply."""
-    data = photo.file.read() if photo else None
-    return service.send_message(
-        student, thread_id, content, data or None, photo.content_type if photo else None
-    )
 
 
 @router.post("/messages/{message_id}/flag", response_model=FlagResponse, status_code=201)

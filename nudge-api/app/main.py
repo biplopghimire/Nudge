@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import Settings, get_settings
 from app.deps import Container
 from app.errors import register_error_handlers
-from app.routers import auth, student, teacher
+from app.routers import auth, student, teacher, threads
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -27,6 +27,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     register_error_handlers(app)
     app.include_router(auth.router)
+    app.include_router(threads.router)
     app.include_router(student.router)
     app.include_router(teacher.router)
 

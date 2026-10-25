@@ -5,6 +5,10 @@
   "usedOn": [
     "Student · Course materials"
   ],
+  "types": {
+    "request": null,
+    "response": "GetStudentCourseResponse"
+  },
   "request": {
     "params": {
       "courseId": "c0000000-0272-4000-8000-000000000001"
@@ -27,7 +31,7 @@
           "id": "d0000000-0006-4000-8000-000000000001",
           "courseId": "c0000000-0272-4000-8000-000000000001",
           "title": "Lecture 6 - Substitution.pdf",
-          "type": "slides",
+          "kind": "slides",
           "sizeBytes": 2516582,
           "restricted": false,
           "status": "ready"
@@ -36,7 +40,7 @@
           "id": "d0000000-0004-4000-8000-000000000002",
           "courseId": "c0000000-0272-4000-8000-000000000001",
           "title": "Problem Set 4.pdf",
-          "type": "homework",
+          "kind": "homework",
           "sizeBytes": 317440,
           "restricted": false,
           "status": "ready"
@@ -45,7 +49,7 @@
           "id": "d0000000-0001-4000-8000-000000000003",
           "courseId": "c0000000-0272-4000-8000-000000000001",
           "title": "Syllabus.pdf",
-          "type": "syllabus",
+          "kind": "syllabus",
           "sizeBytes": 184320,
           "restricted": false,
           "status": "ready"

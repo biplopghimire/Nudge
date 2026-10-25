@@ -6,6 +6,10 @@
     "Student 3 · Chat (flag button)",
     "Flag sheet"
   ],
+  "types": {
+    "request": "FlagMessageRequest",
+    "response": "FlagMessageResponse"
+  },
   "request": {
     "params": {
       "messageId": "f0000000-0000-4000-8000-000000000004"

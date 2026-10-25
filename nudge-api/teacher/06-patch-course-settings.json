@@ -1,16 +1,20 @@
 {
   "method": "PATCH",
   "path": "/teacher/courses/{courseId}/settings",
-  "description": "Teacher changes how Nudge helps in this course. Send only the switches that changed.",
+  "description": "Teacher changes how Nudge helps in this course. Send only the switches that changed. deadlineReminders turns reminders on for every student in the course; each student can still mute them on PATCH /student/me.",
   "usedOn": [
     "Teacher · Options"
   ],
+  "types": {
+    "request": "UpdateCourseSettingsRequest",
+    "response": "UpdateCourseSettingsResponse"
+  },
   "request": {
     "params": {
       "courseId": "c0000000-0272-4000-8000-000000000001"
     },
     "body": {
-      "studentDeadlineReminders": true
+      "deadlineReminders": true
     }
   },
   "response": {
@@ -20,7 +24,7 @@
         "hintsOnly": true,
         "useSolutionKeys": true,
         "citeMaterials": true,
-        "studentDeadlineReminders": true
+        "deadlineReminders": true
       }
     }
   }

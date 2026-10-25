@@ -5,6 +5,10 @@
   "usedOn": [
     "Student 2 · Join a course"
   ],
+  "types": {
+    "request": "JoinCourseRequest",
+    "response": "JoinCourseResponse"
+  },
   "request": {
     "body": {
       "joinCode": "K7M4QX"

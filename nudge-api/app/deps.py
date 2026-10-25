@@ -23,6 +23,7 @@ from app.services.chat import ChatService
 from app.services.ingestion import IngestionService
 from app.services.student import StudentService
 from app.services.teacher import TeacherService
+from app.services.threads import ThreadService
 from app.services.views import Views
 
 
@@ -80,8 +81,11 @@ class Container:
 
     @property
     def student(self) -> StudentService:
-        chat = ChatService(self.repo, self.ai)
-        return StudentService(self.repo, self.storage, chat, self.views, self.settings)
+        return StudentService(self.repo, self.storage, self.views, self.settings)
+
+    @property
+    def threads(self) -> ThreadService:
+        return ThreadService(self.repo, self.storage, ChatService(self.repo, self.ai), self.views)
 
     @property
     def teacher(self) -> TeacherService:
@@ -105,6 +109,10 @@ def get_auth_service(container: Container = Depends(get_container)) -> AuthServi
 
 def get_student_service(container: Container = Depends(get_container)) -> StudentService:
     return container.student
+
+
+def get_thread_service(container: Container = Depends(get_container)) -> ThreadService:
+    return container.threads
 
 
 def get_teacher_service(container: Container = Depends(get_container)) -> TeacherService:

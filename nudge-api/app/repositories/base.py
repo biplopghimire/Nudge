@@ -166,7 +166,7 @@ class Repository(ABC):
 
     @abstractmethod
     def count_student_messages(self, user_id: str, with_photo: bool = False) -> int:
-        """Messages the student sent, across all their chats."""
+        """Messages the student sent, across all their chats. `with_photo` counts image attachments."""
 
     @abstractmethod
     def count_assignment_threads(self, user_id: str) -> int:
@@ -174,7 +174,7 @@ class Repository(ABC):
 
     @abstractmethod
     def course_activity(self, course_id: str, since: datetime) -> tuple[int, int]:
-        """(student questions, distinct students asking) since a time."""
+        """(student questions, distinct students asking) since a time. Teacher threads don't count."""
 
     @abstractmethod
     def list_trending_topics(self, course_id: str, limit: int) -> list[TrendingTopic]: ...

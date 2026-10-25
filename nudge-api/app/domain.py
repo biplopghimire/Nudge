@@ -9,9 +9,11 @@ from datetime import datetime
 from typing import Literal
 
 Role = Literal["student", "teacher"]
-MaterialType = Literal["slides", "notes", "homework", "syllabus", "photo", "solution_key"]
+MaterialKind = Literal["slides", "notes", "homework", "syllabus", "photo", "other"]
 MaterialStatus = Literal["processing", "ready", "failed"]
-MessageRole = Literal["student", "nudge"]
+MessageRole = Literal["student", "teacher", "nudge"]
+AttachmentType = Literal["image", "pdf"]
+AttachmentSource = Literal["camera", "library", "files"]
 FlagStatus = Literal["open", "resolved"]
 
 
@@ -31,7 +33,7 @@ class CourseSettings:
     hints_only: bool = True
     use_solution_keys: bool = False
     cite_materials: bool = True
-    student_deadline_reminders: bool = True
+    deadline_reminders: bool = True  # on for every student; each can still mute it
 
 
 @dataclass
@@ -51,7 +53,7 @@ class Material:
     id: str
     course_id: str
     title: str
-    type: MaterialType
+    kind: MaterialKind
     size_bytes: int
     storage_path: str
     restricted: bool = False
@@ -89,6 +91,7 @@ class Thread:
     title: str
     updated_at: datetime
     assignment_id: str | None = None
+    owner_role: Role = "student"
 
 
 @dataclass
@@ -105,7 +108,9 @@ class Message:
     role: MessageRole
     content: str
     created_at: datetime
-    attachment_path: str | None = None
+    attachment_path: str | None = None  # one-off context, never added to course materials
+    attachment_type: AttachmentType | None = None
+    attachment_source: AttachmentSource | None = None
     citations: list[Citation] = field(default_factory=list)
 
 

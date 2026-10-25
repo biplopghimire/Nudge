@@ -1,0 +1,30 @@
+{
+  "method": "POST",
+  "path": "/teacher/courses/{courseId}/canvas/import",
+  "planned": "v2, details TBD",
+  "description": "Planned for v2; details TBD. Imports the syllabus, files and deadlines from the linked Canvas course. Files become course materials (and go through the normal processing), deadlines become assignments.",
+  "usedOn": [
+    "Teacher · New course (Import from Canvas)"
+  ],
+  "types": {
+    "request": "CanvasImportRequest",
+    "response": "CanvasImportResponse"
+  },
+  "request": {
+    "params": {
+      "courseId": "c0000000-0272-4000-8000-000000000001"
+    },
+    "body": {
+      "syllabus": true,
+      "files": true,
+      "deadlines": true
+    }
+  },
+  "response": {
+    "status": 202,
+    "body": {
+      "materialsImported": 12,
+      "assignmentsImported": 9
+    }
+  }
+}

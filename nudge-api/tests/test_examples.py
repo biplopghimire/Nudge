@@ -13,9 +13,7 @@ from tests.conftest import ALEX, PROF_H, SAM, login
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent
 EXAMPLES = sorted(
-    [EXAMPLES_DIR / "auth-login.json"]
-    + list((EXAMPLES_DIR / "student").glob("*.json"))
-    + list((EXAMPLES_DIR / "teacher").glob("*.json")),
+    path for folder in ("shared", "student", "teacher") for path in (EXAMPLES_DIR / folder).glob("*.json")
 )
 
 # Sam is already in K7M4QX, so join a course Alex is not in yet.
@@ -60,11 +58,14 @@ def call_example(client, example: dict):
             path,
             headers=headers,
             files={"file": ("Lecture 6 - Substitution.pdf", b"%PDF-1.4 mock", "application/pdf")},
-            data={"type": "slides", "restricted": "false"},
+            data={"kind": "slides", "restricted": "false"},
         )
     if path.endswith("/messages") and method == "POST":
         return client.post(
-            path, headers=headers, data={"content": ""}, files={"photo": ("work.jpg", b"jpeg", "image/jpeg")}
+            path,
+            headers=headers,
+            data={"content": "", "attachmentSource": "camera"},
+            files={"attachment": ("work.jpg", b"jpeg", "image/jpeg")},
         )
     if method == "GET":
         return client.get(path, headers=headers)
@@ -76,6 +77,8 @@ def call_example(client, example: dict):
 @pytest.mark.parametrize("example_path", EXAMPLES, ids=lambda p: f"{p.parent.name}/{p.name}")
 def test_matches_example(client, example_path):
     example = json.loads(example_path.read_text())
+    if "planned" in example:
+        pytest.skip(f"planned: {example['planned']}")
     response = call_example(client, example)
     assert response.status_code == example["response"]["status"], response.text
     assert_same_shape(example["response"]["body"], response.json())

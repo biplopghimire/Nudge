@@ -8,6 +8,10 @@
     "Teacher · Reuse a course",
     "Teacher · Profile"
   ],
+  "types": {
+    "request": null,
+    "response": "GetTeacherCoursesResponse"
+  },
   "request": {
     "body": null
   },

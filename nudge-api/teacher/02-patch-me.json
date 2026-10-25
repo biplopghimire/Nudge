@@ -1,10 +1,14 @@
 {
   "method": "PATCH",
   "path": "/teacher/me",
-  "description": "Turn the teacher's notification switches on or off. Send only the switches that changed.",
+  "description": "Turn the teacher's notification switches on or off. Send only the switches that changed. Teachers don't get deadline reminders.",
   "usedOn": [
     "Teacher · Profile"
   ],
+  "types": {
+    "request": "UpdateTeacherMeRequest",
+    "response": "UpdateTeacherMeResponse"
+  },
   "request": {
     "body": {
       "notifications": {
