@@ -232,7 +232,7 @@ class PostgresRepository(Repository):
         _todo("count_assignment_threads")
 
     def course_activity(self, course_id: str, since: datetime) -> tuple[int, int]:
-        _todo("course_activity")
+        _todo("course_activity")  # student threads only: threads.owner_role = 'student'
 
     def list_trending_topics(self, course_id: str, limit: int) -> list[TrendingTopic]:
         _todo("list_trending_topics")

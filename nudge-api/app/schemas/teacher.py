@@ -76,7 +76,7 @@ class UpdateCourseSettingsRequest(CamelModel):
     hints_only: bool | None = None
     use_solution_keys: bool | None = None
     cite_materials: bool | None = None
-    student_deadline_reminders: bool | None = None
+    deadline_reminders: bool | None = None
 
 
 class SettingsResponse(CamelModel):
@@ -85,6 +85,12 @@ class SettingsResponse(CamelModel):
 
 class MaterialResponse(CamelModel):
     material: MaterialOut
+
+
+class CanvasImportRequest(CamelModel):
+    syllabus: bool = True
+    files: bool = True
+    deadlines: bool = True
 
 
 class CourseStatsOut(CamelModel):

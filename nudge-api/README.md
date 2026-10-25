@@ -14,7 +14,7 @@ uvicorn app.main:app --reload
 
 - Interactive docs: http://localhost:8000/docs
 - From the Expo app on a phone, use your computer's LAN IP, for example `uvicorn app.main:app --reload --host 0.0.0.0`, then call `http://192.168.x.x:8000`.
-- Tests: `pytest`. `tests/test_examples.py` checks every endpoint returns the same shape as its example JSON file.
+- Tests: `pytest`. `tests/test_examples.py` checks every endpoint returns the same shape as its example JSON file (planned endpoints are skipped).
 
 ### Mock accounts
 
@@ -25,7 +25,7 @@ Any non-empty password works. The token is `mock-{userId}`.
 | `samlee@andrew.cmu.edu` | student | In 67-272 Sec 1 and 15-213, has 4 chats |
 | `alexchen@andrew.cmu.edu` | student | In 67-272 Sec 1 and Sec 2 |
 | `ppatel@andrew.cmu.edu` | student | In 67-272 Sec 1 |
-| `profh@cmu.edu` | teacher | Teaches 67-272 (join code `K7M4QX`), has past semesters to reuse |
+| `profh@cmu.edu` | teacher | Teaches 67-272 (join code `K7M4QX`), has past semesters to reuse and 1 chat |
 | `profk@cmu.edu` | teacher | Teaches 15-213 (join code `H2QW9D`) |
 
 Data is kept in memory and resets when the server restarts. Uploads stay "processing" for 5 seconds, then become "ready".
@@ -40,13 +40,14 @@ app/
   errors.py          {"error", "message"} error responses
   domain.py          internal records, one per database table (snake_case)
   routers/           HTTP only: parse the request, call a service
-    auth.py  student.py  teacher.py
+    auth.py  threads.py  student.py  teacher.py
   services/          the app's logic: permissions, rules, building responses
+    threads.py       chats for both roles: access checks, attachments, saving messages
     student.py  teacher.py  auth.py
     chat.py          RAG: embed, search two ways, merge, ask the AI, cite
     ingestion.py     uploaded file -> page text -> chunks -> embeddings
     views.py         domain records -> API responses
-  schemas/           request/response models, camelCase JSON (Part 9 types)
+  schemas/           request/response models, camelCase JSON (same names as nudge-types.ts)
   repositories/      all database access
     base.py          the contract: every query the services need
     memory.py        mock (used now)
@@ -113,4 +114,4 @@ Every request except login sends `Authorization: Bearer {token}`. After login, s
 | PATCH | `/teacher/courses/{courseId}/settings` | Change how Nudge helps in this course, and turn deadline reminders on for every student. | [06](teacher/06-patch-course-settings.json) |
 | POST | `/teacher/courses/{courseId}/materials` | Upload a PDF or photo (multipart/form-data). | [07](teacher/07-post-course-materials.json) |
 | GET | `/teacher/courses/{courseId}/dashboard` | Question count, active students, flagged count, trending topics and flagged answers waiting for review (student questions only). | [08](teacher/08-get-course-dashboard.json) |
-| POST | `/teacher/courses/{courseId}/canvas/import` | *Planned for v2, details TBD.* Import the syllabus, files and deadlines from Canvas. | [09](teacher/09-post-canvas-import.json) |
+| POST | `/teacher/courses/{courseId}/canvas/import` | *Planned for v2, details TBD.* Import the syllabus, files and deadlines from Canvas. Returns 501 for now. | [09](teacher/09-post-canvas-import.json) |

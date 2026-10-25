@@ -1,6 +1,6 @@
 """Example data loaded into the in-memory repository on startup.
 
-IDs match the example JSON in nudge-api/student and nudge-api/teacher so the
+IDs match the example JSON in nudge-api/shared, student and teacher so the
 docs and the mock agree. Dates are relative to server start so "Up next",
 "Today" and "This week" always have something to show.
 """
@@ -58,13 +58,13 @@ class SeedData:
     trending: list[TrendingTopic] = field(default_factory=list)
 
 
-def _material(id, course_id, title, type, size, restricted=False) -> Material:
+def _material(id, course_id, title, kind, size, restricted=False) -> Material:
     folder = "restricted" if restricted else "materials"
     return Material(
         id=id,
         course_id=course_id,
         title=title,
-        type=type,
+        kind=kind,
         size_bytes=size,
         storage_path=f"courses/{course_id}/{folder}/{id}/{title}",
         restricted=restricted,
@@ -92,7 +92,7 @@ def default_seed(now: datetime | None = None) -> SeedData:
     courses = [
         Course(C272, "67-272", "Sec 1", "Fall 2026", PROF_H, "K7M4QX",
                CourseSettings(hints_only=True, use_solution_keys=True, cite_materials=True,
-                              student_deadline_reminders=False),
+                              deadline_reminders=False),
                office_hours="Tue and Thu, 4:00pm to 5:30pm"),
         Course(C272_SEC2, "67-272", "Sec 2", "Fall 2026", PROF_H, "P3VN8R",
                office_hours="Tue and Thu, 4:00pm to 5:30pm"),
@@ -111,7 +111,7 @@ def default_seed(now: datetime | None = None) -> SeedData:
         _material(LECTURE_6, C272, "Lecture 6 - Substitution.pdf", "slides", 2_516_582),
         _material(PS4_FILE, C272, "Problem Set 4.pdf", "homework", 317_440),
         _material(SYLLABUS, C272, "Syllabus.pdf", "syllabus", 184_320),
-        _material(PS4_SOLUTIONS, C272, "PS 4 Solutions.pdf", "solution_key", 402_112, restricted=True),
+        _material(PS4_SOLUTIONS, C272, "PS 4 Solutions.pdf", "other", 402_112, restricted=True),
         _material("d0000000-0213-4000-8000-000000000005", C213, "Lab 3 Handout.pdf", "homework", 220_160),
         _material("d0000000-0a26-4000-8000-000000000001", C272_S26, "Lecture 1 - Limits.pdf", "slides", 1_830_400),
         _material("d0000000-0a26-4000-8000-000000000002", C272_S26, "Syllabus.pdf", "syllabus", 176_128),
@@ -154,6 +154,8 @@ def default_seed(now: datetime | None = None) -> SeedData:
         Thread("e0000000-0000-4000-8000-000000000005", ALEX, C272, "PS 4 · Q2", ago(hours=6),
                assignment_id=PS4),
         Thread("e0000000-0000-4000-8000-000000000006", PRIYA, C272, "Chain rule vs. u-sub", ago(days=1)),
+        Thread("e0000000-0000-4000-8000-000000000007", PROF_H, C272, "PS 4 rubric", ago(hours=3),
+               assignment_id=PS4, owner_role="teacher"),
     ]
 
     lecture_6_p4 = Citation(LECTURE_6, "Lecture 6", 4)
@@ -165,7 +167,8 @@ def default_seed(now: datetime | None = None) -> SeedData:
                 "What substitution did lecture 6 suggest for a product like this?",
                 t - timedelta(minutes=2, seconds=32), citations=[lecture_6_p4]),
         Message("f0000000-0000-4000-8000-000000000003", PROBLEM_3_THREAD, "student", "",
-                t - timedelta(seconds=6), attachment_path=f"uploads/{SAM}/f0000003.jpg"),
+                t - timedelta(seconds=6), attachment_path=f"uploads/{SAM}/f0000000-0000-4000-8000-000000000003.jpg",
+                attachment_type="image", attachment_source="camera"),
         Message("f0000000-0000-4000-8000-000000000004", PROBLEM_3_THREAD, "nudge",
                 "Your substitution is right. On the last line, your answer is still in terms of u. "
                 "What should it be in terms of?", t,
@@ -180,6 +183,11 @@ def default_seed(now: datetime | None = None) -> SeedData:
                 "Yes, the answer is sin(x^2) + C.", ago(hours=6), citations=[lecture_6_p4]),
         Message("f0000000-0000-4000-8000-000000000012", "e0000000-0000-4000-8000-000000000006", "student",
                 "When do I use the chain rule instead of u-substitution?", ago(days=1)),
+        Message("f0000000-0000-4000-8000-000000000013", "e0000000-0000-4000-8000-000000000007", "teacher",
+                "What mistakes should I watch for when grading problem 3?", ago(hours=3, minutes=1)),
+        Message("f0000000-0000-4000-8000-000000000014", "e0000000-0000-4000-8000-000000000007", "nudge",
+                "Lecture 6 slide 4 covers this: watch for answers left in terms of u.", ago(hours=3),
+                citations=[lecture_6_p4]),
     ]
 
     flags = [

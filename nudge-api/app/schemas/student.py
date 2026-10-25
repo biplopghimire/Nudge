@@ -4,12 +4,10 @@ from typing import Literal
 from app.schemas.common import (
     AssignmentOut,
     CamelModel,
-    ChatThreadOut,
     CourseOut,
     CourseSummaryOut,
     FlagOut,
     MaterialOut,
-    MessageOut,
     UserOut,
 )
 
@@ -61,30 +59,6 @@ class MaterialLinkResponse(CamelModel):
     url: str
     page: int | None = None
     expires_at: datetime
-
-
-class ThreadsResponse(CamelModel):
-    threads: list[ChatThreadOut]
-
-
-class CreateThreadRequest(CamelModel):
-    course_id: str
-    assignment_id: str | None = None
-    title: str | None = None
-
-
-class ThreadResponse(CamelModel):
-    thread: ChatThreadOut
-
-
-class ThreadDetailResponse(CamelModel):
-    thread: ChatThreadOut
-    messages: list[MessageOut]
-
-
-class SendMessageResponse(CamelModel):
-    student_message: MessageOut
-    reply: MessageOut
 
 
 class FlagRequest(CamelModel):

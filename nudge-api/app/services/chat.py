@@ -4,7 +4,7 @@ This is the real flow. Only the AI client and the repository's search are
 mocked, so swapping in Gemini and Postgres needs no changes here.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from app.domain import Chunk, Citation, Course, Message, Thread
 from app.integrations.ai import AIClient, ReplyRequest
@@ -45,12 +45,15 @@ class ChatService:
         course: Course,
         question: str,
         history: list[Message],
-        photo: bytes | None = None,
-        photo_mime: str | None = None,
+        attachment: bytes | None = None,
+        attachment_mime: str | None = None,
     ) -> Answer:
         settings = course.settings
+        if thread.owner_role == "teacher":
+            # "Hints only" is for students; teachers get full answers.
+            settings = replace(settings, hints_only=False)
         # Solution keys are only searched when the student sends their own work.
-        include_restricted = settings.use_solution_keys and photo is not None
+        include_restricted = settings.use_solution_keys and attachment is not None
 
         chunks = self.retrieve(course.id, question, include_restricted)
         reply = self.ai.generate_reply(
@@ -59,8 +62,8 @@ class ChatService:
                 settings=settings,
                 chunks=chunks,
                 assignment_text=self._assignment_text(thread),
-                photo=photo,
-                photo_mime=photo_mime,
+                attachment=attachment,
+                attachment_mime=attachment_mime,
                 history=[(m.role, m.content) for m in history],
             )
         )

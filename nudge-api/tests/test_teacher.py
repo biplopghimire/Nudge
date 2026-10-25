@@ -46,6 +46,27 @@ def test_reuse_past_course(client, prof_h):
     assert course["materialCount"] == 2
 
 
+def test_deadline_reminders_setting(client, prof_h):
+    response = client.patch(
+        f"/teacher/courses/{C272}/settings", headers=prof_h, json={"deadlineReminders": True}
+    )
+    assert response.json()["settings"]["deadlineReminders"] is True
+
+
+def test_teacher_notifications_have_no_deadline_reminders(client, prof_h):
+    assert set(client.get("/teacher/me", headers=prof_h).json()["notifications"]) == {"flaggedAnswers", "weeklyDigest"}
+
+
+def test_canvas_import_is_planned(client, prof_h):
+    response = client.post(f"/teacher/courses/{C272}/canvas/import", headers=prof_h, json={})
+    assert response.status_code == 501
+    assert response.json()["error"] == "not_implemented"
+
+
+def test_canvas_import_checks_the_course(client, prof_h):
+    assert client.post(f"/teacher/courses/{C213}/canvas/import", headers=prof_h, json={}).status_code == 404
+
+
 def test_update_settings(client, prof_h):
     response = client.patch(f"/teacher/courses/{C272}/settings", headers=prof_h, json={"hintsOnly": False})
     assert response.json()["settings"]["hintsOnly"] is False
@@ -59,7 +80,7 @@ def test_upload_is_processing_then_ready(client, prof_h):
         f"/teacher/courses/{C272}/materials",
         headers=prof_h,
         files={"file": ("Lecture 7.pdf", b"%PDF-1.4 mock", "application/pdf")},
-        data={"type": "slides"},
+        data={"kind": "slides"},
     )
     assert response.status_code == 201
     material = response.json()["material"]
@@ -74,9 +95,21 @@ def test_solution_key_upload_is_restricted(client, prof_h):
         f"/teacher/courses/{C272}/materials",
         headers=prof_h,
         files={"file": ("PS 5 Solutions.pdf", b"%PDF", "application/pdf")},
-        data={"type": "solution_key"},
+        data={"kind": "other", "restricted": "true"},
     ).json()["material"]
     assert material["restricted"] is True
+    assert material["kind"] == "other"
+
+
+def test_upload_rejects_unknown_kind(client, prof_h):
+    response = client.post(
+        f"/teacher/courses/{C272}/materials",
+        headers=prof_h,
+        files={"file": ("PS 5 Solutions.pdf", b"%PDF", "application/pdf")},
+        data={"kind": "solution_key"},
+    )
+    assert response.status_code == 400
+    assert response.json()["error"] == "invalid_kind"
 
 
 def test_upload_rejects_other_file_types(client, prof_h):

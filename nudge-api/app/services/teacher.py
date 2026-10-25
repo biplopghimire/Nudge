@@ -5,11 +5,12 @@ from dataclasses import replace
 from datetime import timedelta
 
 from app.config import Settings
-from app.domain import Assignment, Course, CourseSettings, Material, MaterialType, User
-from app.errors import bad_request, not_found
+from app.domain import Assignment, Course, CourseSettings, Material, MaterialKind, User
+from app.errors import ApiError, bad_request, not_found
 from app.integrations.storage import StorageClient
 from app.repositories.base import Repository
 from app.schemas.teacher import (
+    CanvasImportRequest,
     CopyFrom,
     CourseStatsOut,
     DashboardResponse,
@@ -190,7 +191,7 @@ class TeacherService:
         filename: str,
         data: bytes,
         content_type: str | None,
-        type: MaterialType,
+        kind: MaterialKind,
         restricted: bool,
     ) -> MaterialResponse:
         course = self._own_course(teacher, course_id)
@@ -201,7 +202,6 @@ class TeacherService:
         if len(data) > MAX_UPLOAD_BYTES:
             raise bad_request("file_too_large", "Files can be up to 50 MB.")
 
-        restricted = restricted or type == "solution_key"
         material_id = new_id()
         folder = "restricted" if restricted else "materials"
         path = f"courses/{course.id}/{folder}/{material_id}/{filename}"
@@ -211,7 +211,7 @@ class TeacherService:
                 id=material_id,
                 course_id=course.id,
                 title=filename,
-                type=type,
+                kind=kind,
                 size_bytes=len(data),
                 storage_path=path,
                 restricted=restricted,
@@ -233,3 +233,9 @@ class TeacherService:
             ],
             needs_review=[self.views.flag(f) for f in flags],
         )
+
+    def canvas_import(self, teacher: User, course_id: str, options: CanvasImportRequest) -> None:
+        """Version 2. Will pull the syllabus and files in as materials (then
+        process them like uploads) and deadlines in as assignments."""
+        self._own_course(teacher, course_id)
+        raise ApiError(501, "not_implemented", "Canvas import is planned for version 2.")
