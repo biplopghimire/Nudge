@@ -55,6 +55,16 @@ A chat attachment (a photo or a PDF) is one-off context for that question only. 
 
 ## API overview
 
+The backend is a FastAPI app in [`nudge-api/`](nudge-api/). Every endpoint works today against mock data (no database or API keys needed):
+
+```bash
+cd nudge-api && python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+uvicorn app.main:app --reload   # docs at http://localhost:8000/docs
+```
+
+See [`nudge-api/README.md`](nudge-api/README.md) for mock accounts, how the code is organized and how to swap in Postgres, Gemini and Cloud Storage.
+
 Full details for each endpoint, including the screens that use it and an example request and response, are in [`nudge-api/`](nudge-api/). The TypeScript types the app fills from these responses are in [`nudge-api/nudge-types.ts`](nudge-api/nudge-types.ts).
 
 Every request except login sends `Authorization: Bearer {token}`. After login, students use `/student/...` and teachers use `/teacher/...`. These role-specific endpoints reject the other role's token. The chat endpoints under `/threads` accept either role and check the role inside: students can open threads in courses they are enrolled in, teachers in courses they teach.
