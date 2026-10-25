@@ -1,0 +1,16 @@
+{
+  "name": "nudge-api-tests",
+  "private": true,
+  "type": "module",
+  "description": "Sprint 3 external API tests: Canvas and Gemini",
+  "scripts": {
+    "canvas": "node --env-file=.env src/canvas-test.ts",
+    "canvas:teacher": "node --env-file=.env src/canvas-teacher-test.ts",
+    "gemini": "node --env-file=.env src/gemini-test.ts",
+    "typecheck": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
