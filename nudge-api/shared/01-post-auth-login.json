@@ -5,6 +5,10 @@
   "usedOn": [
     "Sign in"
   ],
+  "types": {
+    "request": "LoginRequest",
+    "response": "LoginResponse"
+  },
   "request": {
     "body": {
       "email": "samlee@andrew.cmu.edu",

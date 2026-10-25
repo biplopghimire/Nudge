@@ -1,10 +1,15 @@
 {
   "method": "GET",
-  "path": "/student/threads/{threadId}",
-  "description": "Get one chat and all its messages, including Nudge's citations.",
+  "path": "/threads/{threadId}",
+  "description": "Get one chat and all its messages, including Nudge's citations. Only the thread's owner can open it.",
   "usedOn": [
-    "Student 3 · Chat"
+    "Student 3 · Chat",
+    "Teacher · Chat"
   ],
+  "types": {
+    "request": null,
+    "response": "GetThreadResponse"
+  },
   "request": {
     "params": {
       "threadId": "e0000000-0003-4000-8000-000000000001"
@@ -18,6 +23,7 @@
         "courseId": "c0000000-0272-4000-8000-000000000001",
         "courseCode": "67-272",
         "assignmentId": "b0000000-0004-4000-8000-000000000001",
+        "ownerRole": "student",
         "title": "Problem 3",
         "updatedAt": "2026-10-04T21:12:36Z"
       },
@@ -27,7 +33,7 @@
           "threadId": "e0000000-0003-4000-8000-000000000001",
           "role": "student",
           "content": "I'm stuck on the integral in #3",
-          "attachmentUrl": null,
+          "attachment": null,
           "citations": [],
           "createdAt": "2026-10-04T21:10:00Z"
         },
@@ -36,7 +42,7 @@
           "threadId": "e0000000-0003-4000-8000-000000000001",
           "role": "nudge",
           "content": "What substitution did lecture 6 suggest for a product like this?",
-          "attachmentUrl": null,
+          "attachment": null,
           "citations": [
             {
               "materialId": "d0000000-0006-4000-8000-000000000001",
@@ -51,7 +57,11 @@
           "threadId": "e0000000-0003-4000-8000-000000000001",
           "role": "student",
           "content": "",
-          "attachmentUrl": "https://storage.googleapis.com/nudge-course-files/uploads/a0000000-0000-4000-8000-000000000001/f0000003.jpg?X-Goog-Expires=900&X-Goog-Signature=...",
+          "attachment": {
+            "url": "https://storage.googleapis.com/nudge-course-files/uploads/a0000000-0000-4000-8000-000000000001/f0000000-0000-4000-8000-000000000003.jpg?X-Goog-Expires=900&X-Goog-Signature=...",
+            "type": "image",
+            "source": "camera"
+          },
           "citations": [],
           "createdAt": "2026-10-04T21:12:30Z"
         },
@@ -60,7 +70,7 @@
           "threadId": "e0000000-0003-4000-8000-000000000001",
           "role": "nudge",
           "content": "Your substitution is right. On the last line, your answer is still in terms of u. What should it be in terms of?",
-          "attachmentUrl": null,
+          "attachment": null,
           "citations": [
             {
               "materialId": "d0000000-0006-4000-8000-000000000001",

@@ -1,10 +1,14 @@
 {
   "method": "PATCH",
   "path": "/student/me",
-  "description": "Turn the student's notification switches on or off. Send only the switches that changed.",
+  "description": "Turn the student's notification switches on or off. Send only the switches that changed. deadlineReminders mutes reminders for this student; a reminder is sent only when the course setting is also on.",
   "usedOn": [
     "Student 8 · Profile"
   ],
+  "types": {
+    "request": "UpdateStudentMeRequest",
+    "response": "UpdateStudentMeResponse"
+  },
   "request": {
     "body": {
       "notifications": {

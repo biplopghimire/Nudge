@@ -5,6 +5,10 @@
   "usedOn": [
     "Teacher · Profile"
   ],
+  "types": {
+    "request": null,
+    "response": "GetTeacherMeResponse"
+  },
   "request": {
     "body": null
   },

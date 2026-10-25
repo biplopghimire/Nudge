@@ -1,10 +1,14 @@
 {
   "method": "GET",
   "path": "/teacher/courses/{courseId}/dashboard",
-  "description": "Teacher home for one course: question count, active students, flagged count, trending topics and flagged answers waiting for review.",
+  "description": "Teacher home for one course: question count, active students, flagged count, trending topics and flagged answers waiting for review. Counts and trending topics include student questions only.",
   "usedOn": [
     "Teacher · Home"
   ],
+  "types": {
+    "request": null,
+    "response": "GetDashboardResponse"
+  },
   "request": {
     "params": {
       "courseId": "c0000000-0272-4000-8000-000000000001"

@@ -1,11 +1,16 @@
 {
   "method": "POST",
-  "path": "/student/threads",
-  "description": "Start a new chat in a course, optionally tied to an assignment. Used by the Start button on Home and the new chat button.",
+  "path": "/threads",
+  "description": "Start a new chat in a course, optionally tied to an assignment. Students can start chats in courses they are enrolled in, teachers in courses they teach. The thread's ownerRole is set from the token.",
   "usedOn": [
     "Student 1 · Home (Start)",
-    "Student 5 · Recent chats (new chat)"
+    "Student 5 · Recent chats (new chat)",
+    "Teacher · Home (Message Nudge… bar)"
   ],
+  "types": {
+    "request": "CreateThreadRequest",
+    "response": "CreateThreadResponse"
+  },
   "request": {
     "body": {
       "courseId": "c0000000-0272-4000-8000-000000000001",
@@ -21,6 +26,7 @@
         "courseId": "c0000000-0272-4000-8000-000000000001",
         "courseCode": "67-272",
         "assignmentId": "b0000000-0004-4000-8000-000000000001",
+        "ownerRole": "student",
         "title": "Problem 3",
         "updatedAt": "2026-10-04T21:09:50Z"
       }

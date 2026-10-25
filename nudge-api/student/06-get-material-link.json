@@ -7,6 +7,10 @@
     "File viewer",
     "Student · Course materials"
   ],
+  "types": {
+    "request": null,
+    "response": "GetMaterialLinkResponse"
+  },
   "request": {
     "params": {
       "materialId": "d0000000-0006-4000-8000-000000000001"

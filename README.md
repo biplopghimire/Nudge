@@ -55,7 +55,7 @@ A chat attachment (a photo or a PDF) is one-off context for that question only. 
 
 ## API overview
 
-Full details for each endpoint, including the screens that use it and an example request and response, are in [`nudge-api/`](nudge-api/).
+Full details for each endpoint, including the screens that use it and an example request and response, are in [`nudge-api/`](nudge-api/). The TypeScript types the app fills from these responses are in [`nudge-api/nudge-types.ts`](nudge-api/nudge-types.ts).
 
 Every request except login sends `Authorization: Bearer {token}`. After login, students use `/student/...` and teachers use `/teacher/...`. These role-specific endpoints reject the other role's token. The chat endpoints under `/threads` accept either role and check the role inside: students can open threads in courses they are enrolled in, teachers in courses they teach.
 

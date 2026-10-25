@@ -7,6 +7,10 @@
     "Teacher · New course",
     "Teacher · Reuse a course"
   ],
+  "types": {
+    "request": "CreateCourseRequest",
+    "response": "CreateCourseResponse"
+  },
   "request": {
     "body": {
       "code": "67-272",

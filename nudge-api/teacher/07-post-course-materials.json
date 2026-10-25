@@ -6,6 +6,10 @@
     "Teacher · New course (Add slides, notes, homework)",
     "Upload progress"
   ],
+  "types": {
+    "request": "UploadMaterialRequest",
+    "response": "UploadMaterialResponse"
+  },
   "request": {
     "params": {
       "courseId": "c0000000-0272-4000-8000-000000000001"
@@ -13,8 +17,8 @@
     "contentType": "multipart/form-data",
     "body": {
       "file": "(binary) Lecture 6 - Substitution.pdf",
-      "type": "slides",
-      "restricted": false
+      "restricted": false,
+      "kind": "slides"
     }
   },
   "response": {
@@ -24,7 +28,7 @@
         "id": "d0000000-0006-4000-8000-000000000001",
         "courseId": "c0000000-0272-4000-8000-000000000001",
         "title": "Lecture 6 - Substitution.pdf",
-        "type": "slides",
+        "kind": "slides",
         "sizeBytes": 2516582,
         "restricted": false,
         "status": "processing"
