@@ -9,14 +9,19 @@ import type {
 } from "./types.ts";
 
 const baseUrl = "https://generativelanguage.googleapis.com/v1beta";
-export const chatModel = env("GEMINI_MODEL", "gemini-2.5-flash");
+export const chatModel = env("GEMINI_MODEL", "gemini-3.5-flash");
 export const embeddingModel = env("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001");
+
+// Same key the backend uses (NUDGE_GEMINI_API_KEY) also works here.
+function apiKey(): string {
+  return process.env.NUDGE_GEMINI_API_KEY?.trim() || requireEnv("GEMINI_API_KEY");
+}
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${baseUrl}/${path}`, {
     method: "POST",
     // Key goes in a header, not the URL, so it never shows up in logs.
-    headers: { "Content-Type": "application/json", "x-goog-api-key": requireEnv("GEMINI_API_KEY") },
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey() },
     body: JSON.stringify(body),
   });
   const json = (await response.json()) as T | GeminiError;

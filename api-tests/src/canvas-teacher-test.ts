@@ -17,7 +17,7 @@ import {
   toCreateCourseRequest,
   toNudgeAssignment,
   toNudgeMaterial,
-  type MaterialType,
+  type MaterialKind,
 } from "./canvas/toNudge.ts";
 import type { CanvasAssignment, CanvasCourseWithEnrollments, CanvasFile, CanvasFolder } from "./canvas/types.ts";
 import { env } from "./env.ts";
@@ -82,13 +82,13 @@ async function main() {
   console.log(`${files.length} files over ${pages} pages. ${importable.length} can be imported (PDFs and photos).`);
   console.log(`Skipped types: ${[...new Set(files.filter((f) => !IMPORTABLE_TYPES.has(f["content-type"])).map((f) => f["content-type"]))].join(", ") || "none"}`);
 
-  const byType = new Map<MaterialType, number>();
-  for (const m of materials) byType.set(m.type, (byType.get(m.type) ?? 0) + 1);
-  console.log(`By type: ${[...byType].map(([t, n]) => `${t} ${n}`).join(", ")}`);
+  const byKind = new Map<MaterialKind, number>();
+  for (const m of materials) byKind.set(m.kind, (byKind.get(m.kind) ?? 0) + 1);
+  console.log(`By kind: ${[...byKind].map(([t, n]) => `${t} ${n}`).join(", ")}`);
   console.log(`Restricted (solution keys or hidden in Canvas): ${materials.filter((m) => m.restricted).length}`);
   console.log("\nMost recent 8:");
   for (const m of materials.slice(0, 8)) {
-    console.log(`  ${m.type.padEnd(13)} ${m.restricted ? "restricted " : "           "}${kb(m.sizeBytes).padStart(7)}  ${m.title}`);
+    console.log(`  ${m.kind.padEnd(9)} ${m.restricted ? "restricted " : "           "}${kb(m.sizeBytes).padStart(7)}  ${m.title}`);
   }
   console.log("\nAs JSON (first one):");
   console.log(JSON.stringify(materials[0], null, 2));
@@ -96,7 +96,7 @@ async function main() {
   heading("4. Download one PDF");
   // Only lecture slides students can already see. Never anything restricted or grade-related.
   const pdf = importable
-    .filter((f, i) => f["content-type"] === "application/pdf" && materials[i].type === "slides" && !materials[i].restricted)
+    .filter((f, i) => f["content-type"] === "application/pdf" && materials[i].kind === "slides" && !materials[i].restricted)
     .filter((f) => !/grade|score|roster/i.test(f.display_name))
     .sort((a, b) => a.size - b.size)[0];
   if (pdf) {
@@ -116,8 +116,9 @@ async function main() {
   const dated = assignments.filter((a) => a.due_at);
   console.log(`${assignments.length} assignments, ${dated.length} with due dates. Last 8 by due date:`);
   for (const a of dated.slice(-8)) console.log(`  ${formatDue(a.due_at).padEnd(22)} ${a.name}`);
-  console.log("\nAs Nudge assignments (first 2):");
-  console.log(JSON.stringify(dated.slice(0, 2).map((a) => toNudgeAssignment(a, "<nudge course id>")), null, 2));
+  console.log("\nAs Nudge assignments (last 2):");
+  const target = { id: "<nudge course id>", code: nudgeCourse.code };
+  console.log(JSON.stringify(dated.slice(-2).map((a) => toNudgeAssignment(a, target)), null, 2));
 }
 
 main().catch((error: unknown) => {

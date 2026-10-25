@@ -1,33 +1,15 @@
 // How Canvas data becomes Nudge data in the version 2 import.
-// The output types match Part 9 and the backend's /student/courses response.
+// Output types come from the team's shared nudge-api/nudge-types.ts.
 
+import type {
+  Assignment,
+  CreateCourseRequest,
+  Material,
+  MaterialKind,
+} from "../../../nudge-api/nudge-types.ts";
 import type { CanvasAssignment, CanvasCourse, CanvasFile, CanvasFolder } from "./types.ts";
 
-export type Assignment = {
-  id: string;
-  courseId: string;
-  title: string;      // "Problem Set 4"
-  dueAt?: string;
-};
-
-export type MaterialType = "slides" | "notes" | "homework" | "syllabus" | "photo" | "solution_key";
-
-// What POST /teacher/courses/:id/materials would create for each file.
-export type Material = {
-  id: string;
-  courseId: string;
-  title: string;
-  type: MaterialType;
-  sizeBytes: number;
-  restricted: boolean;
-  status: "processing" | "ready" | "failed";
-};
-
-export type CreateCourseRequest = {
-  code: string;       // "67-443"
-  section: string;
-  semester: string;   // "Fall 2026"
-};
+export type { Assignment, CreateCourseRequest, Material, MaterialKind };
 
 /** "67443" -> "67-443". Canvas drops the dash CMU uses. */
 export function formatCourseCode(canvasCode: string): string {
@@ -55,12 +37,25 @@ export function toCreateCourseRequest(course: CanvasCourse): CreateCourseRequest
   };
 }
 
-export function toNudgeAssignment(a: CanvasAssignment, nudgeCourseId: string): Assignment {
+/** "Lab 13 - Docker" -> "Lab 13", "Sprint 3: API & Prototyping" -> "Sprint 3". */
+export function shortTitle(name: string): string {
+  const head = name.split(/\s+[-–:]\s+|:\s*/)[0].trim();
+  return head.length <= 16 ? head : `${head.slice(0, 15).trim()}…`;
+}
+
+/** Nudge assignments need a due date, so undated Canvas assignments return null. */
+export function toNudgeAssignment(
+  a: CanvasAssignment,
+  course: { id: string; code: string },
+): Assignment | null {
+  if (!a.due_at) return null;
   return {
     id: `canvas-${a.id}`,
-    courseId: nudgeCourseId,
+    courseId: course.id,
+    courseCode: course.code,
     title: a.name,
-    ...(a.due_at ? { dueAt: a.due_at } : {}),
+    shortTitle: shortTitle(a.name),
+    dueAt: a.due_at,
   };
 }
 
@@ -69,10 +64,15 @@ export const IMPORTABLE_TYPES = new Set(["application/pdf", "image/jpeg", "image
 
 const SOLUTION_WORDS = /solution|answer[ _-]?key|\bkey\b|rubric/i;
 
-/** Guess the Nudge material type from the file name, folder and content type. */
-export function guessMaterialType(file: CanvasFile, folder?: CanvasFolder): MaterialType {
+/** Solution keys and rubrics. Nudge stores them as restricted, never shown to students. */
+export function isSolutionFile(file: CanvasFile, folder?: CanvasFolder): boolean {
+  return SOLUTION_WORDS.test(`${folder?.full_name ?? ""}/${file.display_name}`);
+}
+
+/** Guess the Nudge material kind from the file name, folder and content type. */
+export function guessMaterialKind(file: CanvasFile, folder?: CanvasFolder): MaterialKind {
   const name = `${folder?.full_name ?? ""}/${file.display_name}`;
-  if (SOLUTION_WORDS.test(name)) return "solution_key";
+  if (isSolutionFile(file, folder)) return "other";
   if (/syllabus/i.test(name)) return "syllabus";
   if (/\b(lab|hw|homework|assignment|problem[ _-]?set|ps[ _-]?\d|phase|project)/i.test(name)) return "homework";
   if (/lecture|slides?\b|_s\d\d\b/i.test(name) || /presentation/.test(file["content-type"])) return "slides";
@@ -81,15 +81,14 @@ export function guessMaterialType(file: CanvasFile, folder?: CanvasFolder): Mate
 }
 
 export function toNudgeMaterial(file: CanvasFile, nudgeCourseId: string, folder?: CanvasFolder): Material {
-  const type = guessMaterialType(file, folder);
   return {
     id: `canvas-${file.id}`,
     courseId: nudgeCourseId,
     title: file.display_name,
-    type,
+    kind: guessMaterialKind(file, folder),
     sizeBytes: file.size,
     // Solution keys, and anything hidden from students in Canvas, stay hidden in Nudge.
-    restricted: type === "solution_key" || file.hidden || file.locked || Boolean(folder?.hidden || folder?.locked),
+    restricted: isSolutionFile(file, folder) || file.hidden || file.locked || Boolean(folder?.hidden || folder?.locked),
     status: "processing",
   };
 }

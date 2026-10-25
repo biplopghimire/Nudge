@@ -92,7 +92,9 @@ async function main() {
   console.log("POST /teacher/courses body:");
   console.log(JSON.stringify(createCourse, null, 2));
   console.log("Assignments (first 3):");
-  console.log(JSON.stringify(assignments.slice(0, 3).map((a) => toNudgeAssignment(a, "<nudge course id>")), null, 2));
+  const target = { id: "<nudge course id>", code: createCourse.code };
+  const mapped = assignments.map((a) => toNudgeAssignment(a, target)).filter((a) => a !== null);
+  console.log(JSON.stringify(mapped.slice(0, 3), null, 2));
 }
 
 main().catch((error: unknown) => {
