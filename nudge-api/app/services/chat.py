@@ -111,12 +111,12 @@ class ChatService:
         ]
 
     def _citations(self, chunks: list[Chunk], used: list[Source]) -> list[Citation]:
-        """One chip per file and page the reply relied on. Restricted chunks are never cited."""
+        """One chip per file name and page the reply relied on. Restricted chunks are never cited."""
         seen: set[tuple[str, int | None]] = set()
         citations = []
         for source in used:
             chunk = chunks[source.number - 1]
-            key = (chunk.material_id, chunk.page)
+            key = (source.title, chunk.page)  # two uploads of the same file show one chip
             if chunk.restricted or key in seen:
                 continue
             seen.add(key)
