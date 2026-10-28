@@ -117,19 +117,21 @@ class ThreadService:
             self.storage.upload(attachment_path, attachment, attachment_mime)
 
         history = self.repo.list_messages(thread.id)
+        asked_at = utc_now()
+        # Ask first, so a failed answer doesn't leave a question with no reply.
+        answer = self.chat.answer(thread, course, content, history, attachment, attachment_mime)
         sent = self.repo.add_message(
             Message(
                 id=new_id(),
                 thread_id=thread.id,
                 role=user.role,
                 content=content,
-                created_at=utc_now(),
+                created_at=asked_at,
                 attachment_path=attachment_path,
                 attachment_type=attachment_type,
                 attachment_source=attachment_source if attachment else None,
             )
         )
-        answer = self.chat.answer(thread, course, content, history, attachment, attachment_mime)
         reply = self.repo.add_message(
             Message(
                 id=new_id(),

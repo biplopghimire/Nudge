@@ -16,14 +16,21 @@ class Settings(BaseSettings):
     # Which implementation to use for each dependency.
     repository: Literal["memory", "postgres"] = "memory"
     ai: Literal["mock", "gemini"] = "mock"
-    storage: Literal["mock", "gcs"] = "mock"
+    storage: Literal["mock", "local", "gcs"] = "mock"
     auth: Literal["mock"] = "mock"
 
     # Postgres (Supabase). Read as NUDGE_DATABASE_URL.
     database_url: str | None = None
-    # Gemini and Google Cloud Storage.
+    # Gemini. Chat models are tried in order when one is overloaded.
     gemini_api_key: str | None = None
+    gemini_chat_models: list[str] = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-3.5-flash-lite"]
+    gemini_transcribe_models: list[str] = ["gemini-3.5-flash-lite", "gemini-2.5-flash"]
+    gemini_embedding_model: str = "gemini-embedding-2"
+    gemini_timeout_seconds: float = 45.0
+
+    # File storage. "local" keeps files in local_storage_dir.
     bucket: str = "nudge-course-files"
+    local_storage_dir: str = ".storage"
 
     # App behavior.
     current_semester: str = "Fall 2026"

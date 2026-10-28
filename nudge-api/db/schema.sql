@@ -91,8 +91,11 @@ create table messages (
   attachment_type text check (attachment_type in ('image', 'pdf')),                     -- added
   attachment_source text check (attachment_source in ('camera', 'library', 'files')),  -- added
   citations   jsonb not null default '[]',  -- [{materialId, title, page}]
-  created_at  timestamptz not null default now()
+  created_at  timestamptz not null default now(),
+  seq         bigint generated always as identity  -- added: keeps insert order when timestamps tie
 );
+
+create index on messages (thread_id, created_at, seq);
 
 create table flags (
   id          uuid primary key default gen_random_uuid(),

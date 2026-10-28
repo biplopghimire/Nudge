@@ -1,5 +1,0 @@
-# Install when switching NUDGE_REPOSITORY to postgres.
-psycopg[binary]>=3.2
-psycopg-pool>=3.2
-pgvector>=0.3
-numpy>=1.26

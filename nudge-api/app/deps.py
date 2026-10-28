@@ -15,7 +15,7 @@ from app.domain import User
 from app.errors import forbidden
 from app.integrations.ai import AIClient, MockAIClient
 from app.integrations.auth import AuthProvider, MockAuthProvider
-from app.integrations.storage import MockStorage, StorageClient
+from app.integrations.storage import LocalStorage, MockStorage, StorageClient
 from app.repositories.base import Repository
 from app.repositories.memory import InMemoryRepository
 from app.services.auth import AuthService
@@ -39,13 +39,25 @@ def build_repository(settings: Settings) -> Repository:
 
 def build_ai(settings: Settings) -> AIClient:
     if settings.ai == "gemini":
-        raise NotImplementedError("GeminiClient is not written yet (app/integrations/ai.py).")
+        from app.integrations.gemini import GeminiClient
+
+        if not settings.gemini_api_key:
+            raise RuntimeError("Set NUDGE_GEMINI_API_KEY to use Gemini.")
+        return GeminiClient(
+            settings.gemini_api_key,
+            chat_models=settings.gemini_chat_models,
+            transcribe_models=settings.gemini_transcribe_models,
+            embedding_model=settings.gemini_embedding_model,
+            timeout_seconds=settings.gemini_timeout_seconds,
+        )
     return MockAIClient()
 
 
 def build_storage(settings: Settings) -> StorageClient:
+    if settings.storage == "local":
+        return LocalStorage(settings.local_storage_dir, settings.bucket)
     if settings.storage == "gcs":
-        raise NotImplementedError("GCSStorage is not written yet (app/integrations/storage.py).")
+        raise NotImplementedError("Cloud storage comes in step 2 (app/integrations/storage.py).")
     return MockStorage(settings.bucket)
 
 

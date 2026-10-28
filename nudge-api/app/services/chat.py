@@ -1,13 +1,14 @@
 """Answering a question with the course's materials (Part 4, "Answering a question").
 
-This is the real flow. Only the AI client and the repository's search are
-mocked, so swapping in Gemini and Postgres needs no changes here.
+The same flow runs with the mock or Gemini, and with the in-memory or Postgres
+repository: embed the question, search two ways, merge, ask the AI, cite.
 """
 
 from dataclasses import dataclass, replace
 
 from app.domain import Chunk, Citation, Course, Message, Thread
-from app.integrations.ai import AIClient, ReplyRequest
+from app.errors import ApiError
+from app.integrations.ai import AIClient, AIUnavailable, ReplyRequest, Source
 from app.repositories.base import Repository
 from app.services.common import citation_title
 
@@ -55,25 +56,32 @@ class ChatService:
         # Solution keys are only searched when the student sends their own work.
         include_restricted = settings.use_solution_keys and attachment is not None
 
-        chunks = self.retrieve(course.id, question, include_restricted)
-        reply = self.ai.generate_reply(
-            ReplyRequest(
-                question=question,
-                settings=settings,
-                chunks=chunks,
-                assignment_text=self._assignment_text(thread),
-                attachment=attachment,
-                attachment_mime=attachment_mime,
-                history=[(m.role, m.content) for m in history],
+        try:
+            chunks = self.retrieve(course.id, question, include_restricted)
+            sources = self._sources(chunks)
+            reply = self.ai.generate_reply(
+                ReplyRequest(
+                    question=question,
+                    settings=settings,
+                    sources=sources,
+                    asker_role=thread.owner_role,
+                    assignment_text=self._assignment_text(thread),
+                    attachment=attachment,
+                    attachment_mime=attachment_mime,
+                    history=[(m.role, m.content) for m in history],
+                )
             )
-        )
-        citations = self._citations(chunks) if settings.cite_materials else []
-        return Answer(content=reply, citations=citations)
+        except AIUnavailable as error:
+            raise ApiError(503, "nudge_busy", "Nudge is busy right now. Try again in a minute.") from error
+
+        used = [s for s in sources if s.number in reply.used_sources]
+        citations = self._citations(chunks, used) if settings.cite_materials else []
+        return Answer(content=reply.text, citations=citations)
 
     def retrieve(self, course_id: str, question: str, include_restricted: bool) -> list[Chunk]:
         if not question.strip():
             question = "student work"
-        [embedding] = self.ai.embed([question])
+        [embedding] = self.ai.embed([question], task="query")
         by_meaning = self.repo.search_chunks_by_embedding(
             course_id, embedding, SEARCH_LIMIT, include_restricted
         )
@@ -91,17 +99,26 @@ class ChatService:
         chunks = sorted(self.repo.list_chunks(assignment.material_id), key=lambda c: c.page or 0)
         return "\n\n".join(c.content for c in chunks) or None
 
-    def _citations(self, chunks: list[Chunk]) -> list[Citation]:
-        """One citation per file and page. Restricted chunks are never cited."""
+    def _sources(self, chunks: list[Chunk]) -> list[Source]:
+        titles: dict[str, str] = {}
+        for chunk in chunks:
+            if chunk.material_id not in titles:
+                material = self.repo.get_material(chunk.material_id)
+                titles[chunk.material_id] = citation_title(material.title) if material else "Course material"
+        return [
+            Source(number=i, title=titles[c.material_id], page=c.page, content=c.content, restricted=c.restricted)
+            for i, c in enumerate(chunks, start=1)
+        ]
+
+    def _citations(self, chunks: list[Chunk], used: list[Source]) -> list[Citation]:
+        """One chip per file and page the reply relied on. Restricted chunks are never cited."""
         seen: set[tuple[str, int | None]] = set()
         citations = []
-        for chunk in chunks:
+        for source in used:
+            chunk = chunks[source.number - 1]
             key = (chunk.material_id, chunk.page)
             if chunk.restricted or key in seen:
                 continue
-            material = self.repo.get_material(chunk.material_id)
-            if not material:
-                continue
             seen.add(key)
-            citations.append(Citation(chunk.material_id, citation_title(material.title), chunk.page))
+            citations.append(Citation(chunk.material_id, source.title, chunk.page))
         return citations[:3]

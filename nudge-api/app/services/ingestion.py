@@ -2,6 +2,12 @@
 
 Runs in the background after an upload: the material is "processing" until
 this finishes, then "ready" (or "failed").
+
+1. The AI transcribes every page (PDF pages or one photo) to clean text, math in LaTeX.
+2. Each page is split into chunks of at most 400 words.
+3. Each chunk starts with a label like "Lecture 6, page 4 (Substitution)" so search
+   can match the file and page.
+4. Chunks are embedded and saved with the material's restricted flag.
 """
 
 import logging
@@ -17,15 +23,6 @@ from app.services.common import citation_title, new_id
 log = logging.getLogger(__name__)
 
 MAX_CHUNK_WORDS = 400
-
-
-def split_pages(data: bytes, mime_type: str) -> list[bytes]:
-    """One image per page.
-
-    TODO: render PDF pages to PNG (for example with pypdfium2). For now the
-    whole file counts as one page, which is right for photos.
-    """
-    return [data]
 
 
 def split_into_chunks(text: str, max_words: int = MAX_CHUNK_WORDS) -> list[str]:
@@ -67,15 +64,18 @@ class IngestionService:
 
     def _build_chunks(self, material: Material, mime_type: str) -> list[Chunk]:
         data = self.storage.download(material.storage_path)
-        label = citation_title(material.title)
-        drafts: list[tuple[int, str]] = []
-        for page_number, page in enumerate(split_pages(data, mime_type), start=1):
-            text = self.ai.transcribe_page(page, mime_type)
-            for piece in split_into_chunks(text):
-                # The label helps search match the right file (Part 4).
-                drafts.append((page_number, f"{label}, page {page_number}. {piece}"))
+        if not data:
+            raise ValueError(f"No file found at {material.storage_path}")
+        title = citation_title(material.title)
+        drafts: list[tuple[int, str, str]] = []  # (page, heading, content)
+        for page in self.ai.transcribe(data, mime_type):
+            heading = f"{title}, page {page.page}" + (f" ({page.heading})" if page.heading else "")
+            for piece in split_into_chunks(page.text):
+                drafts.append((page.page, heading, f"{heading}. {piece}"))
+        if not drafts:
+            raise ValueError("No text could be read from the file")
 
-        embeddings = self.ai.embed([content for _, content in drafts]) if drafts else []
+        embeddings = self.ai.embed([content for _, _, content in drafts], task="document")
         return [
             Chunk(
                 id=new_id(),
@@ -83,9 +83,9 @@ class IngestionService:
                 material_id=material.id,
                 content=content,
                 page=page_number,
-                heading=f"{label}, page {page_number}",
+                heading=heading,
                 restricted=material.restricted,
                 embedding=embedding,
             )
-            for (page_number, content), embedding in zip(drafts, embeddings)
+            for (page_number, heading, content), embedding in zip(drafts, embeddings)
         ]
