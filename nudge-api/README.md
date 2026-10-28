@@ -1,6 +1,13 @@
 # Nudge API
 
-FastAPI backend for Nudge. All endpoints below are implemented. The Nudge engine (Postgres + pgvector search and Gemini) is real; by default everything runs on mocks, so it also works with no accounts or keys. Cloud file storage is still mocked.
+FastAPI backend for Nudge. All endpoints below are implemented. The Nudge engine (Postgres + pgvector search, Gemini, Cloud Storage, real login) is live on Cloud Run. By default it runs on mocks locally, so it also works with no accounts or keys.
+
+## Live
+
+**https://nudge-api-214919077406.us-east1.run.app** ([docs](https://nudge-api-214919077406.us-east1.run.app/docs))
+
+Runs on Google Cloud Run (`us-east1`) as the `nudge-backend` service account, with Supabase Postgres + pgvector,
+Gemini, the private `nudge-course-files` bucket and real login. Sign up with `POST /auth/signup`.
 
 ## Run it
 
@@ -75,11 +82,14 @@ app/
   integrations/      outside services, each an interface + a mock
     ai.py            the AI interface, Nudge's instructions, mock AI
     gemini.py        Gemini: embeddings, PDF transcription, replies; timeouts and model fallback
-    storage.py       file storage: in-memory mock and local disk
+    storage.py       file storage: in-memory mock, local disk, Google Cloud Storage
     auth.py
 db/schema.sql        Postgres tables (Part 3 plus the columns the API needs)
 scripts/db.py        create the tables and load example data
 scripts/smoke.py     end-to-end check against a running server
+scripts/gcp_setup.sh one-time Google Cloud permissions
+scripts/deploy.sh    deploy to Cloud Run
+Dockerfile           the Cloud Run container
 samples/             a 4-page lecture PDF for testing uploads
 ```
 
@@ -104,11 +114,21 @@ citation chips. Solution keys are only searched when a student sends their own w
 **Reliability:** every Gemini call has a timeout. When a model is overloaded (503) or times out, the next model in the
 list is tried, then the whole list once more. If all fail, the API answers `503 nudge_busy` and nothing is saved.
 
-## Still mocked
+## Deploying
 
-| Mock | What to do | Switch |
-|---|---|---|
-| Cloud file storage | Write a cloud `StorageClient` in `integrations/storage.py` and return it from `build_storage`. | `NUDGE_STORAGE=...` |
+One-time setup (already done for `nudge-513020`):
+
+1. Google Cloud project with billing, `gcloud auth login` and `gcloud auth application-default login`.
+2. The bucket: `gcloud storage buckets create gs://nudge-course-files --location us-east1 --default-storage-class STANDARD --uniform-bucket-level-access --public-access-prevention`
+3. `bash scripts/gcp_setup.sh`: the `nudge-backend` service account and its permissions (no key files).
+4. Supabase project in East US with the Data API off. Put its Session pooler string in `.env` as
+   `NUDGE_PROD_DATABASE_URL`, then create the tables and example data:
+   `NUDGE_DATABASE_URL="$(grep ^NUDGE_PROD_DATABASE_URL= .env | cut -d= -f2-)" python -m scripts.db setup`
+
+Every deploy after that: `bash scripts/deploy.sh` (stores the secrets in Secret Manager the first time, builds the
+Dockerfile with Cloud Build and deploys). Check it with `python -m scripts.smoke https://nudge-api-214919077406.us-east1.run.app`.
+
+To use Cloud Storage from your laptop, set `NUDGE_STORAGE=gcs`; it acts as `nudge-backend` through your gcloud login.
 
 Real credentials go in `nudge-api/.env`, which git ignores.
 

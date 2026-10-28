@@ -55,7 +55,7 @@ A chat attachment (a photo or a PDF) is one-off context for that question only. 
 
 ## API overview
 
-The backend is a FastAPI app in [`nudge-api/`](nudge-api/). Every endpoint works today against mock data (no database or API keys needed):
+The backend is a FastAPI app in [`nudge-api/`](nudge-api/), live at **https://nudge-api-214919077406.us-east1.run.app** ([docs](https://nudge-api-214919077406.us-east1.run.app/docs)). To run it locally on mock data (no database or API keys needed):
 
 ```bash
 cd nudge-api && python3 -m venv .venv && source .venv/bin/activate
