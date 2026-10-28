@@ -17,10 +17,16 @@ class Settings(BaseSettings):
     repository: Literal["memory", "postgres"] = "memory"
     ai: Literal["mock", "gemini"] = "mock"
     storage: Literal["mock", "local", "gcs"] = "mock"
-    auth: Literal["mock"] = "mock"
+    auth: Literal["mock", "jwt"] = "mock"
 
     # Postgres (Supabase). Read as NUDGE_DATABASE_URL.
     database_url: str | None = None
+    # Login tokens (NUDGE_AUTH=jwt). Make one with: python -c "import secrets; print(secrets.token_urlsafe(48))"
+    jwt_secret: str | None = None
+    token_days: int = 30
+    # Password for the example accounts loaded by scripts/db.py when NUDGE_AUTH=jwt.
+    seed_password: str | None = None
+
     # Gemini. Chat models are tried in order when one is overloaded.
     gemini_api_key: str | None = None
     gemini_chat_models: list[str] = ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-3.5-flash-lite"]

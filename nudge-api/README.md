@@ -1,6 +1,6 @@
 # Nudge API
 
-FastAPI backend for Nudge. All endpoints below are implemented. The Nudge engine (Postgres + pgvector search and Gemini) is real; by default everything runs on mocks, so it also works with no accounts or keys. Login and cloud file storage are still mocked.
+FastAPI backend for Nudge. All endpoints below are implemented. The Nudge engine (Postgres + pgvector search and Gemini) is real; by default everything runs on mocks, so it also works with no accounts or keys. Cloud file storage is still mocked.
 
 ## Run it
 
@@ -22,6 +22,9 @@ That runs on mocks (in-memory data, canned AI replies). To run the real engine l
    NUDGE_AI=gemini
    NUDGE_GEMINI_API_KEY=your key from https://aistudio.google.com/apikey
    NUDGE_STORAGE=local
+   NUDGE_AUTH=jwt
+   NUDGE_JWT_SECRET=a long random string (see .env.example)
+   NUDGE_SEED_PASSWORD=a password for the example accounts
    ```
 3. **Tables and example data:** `python -m scripts.db setup` (embeds the example chunks with Gemini).
 4. `uvicorn app.main:app --reload`, then in another terminal `python -m scripts.smoke`. It uploads `samples/lecture-7-integration-by-parts.pdf` as Prof. H, waits for processing, and asks four questions as Sam, printing each reply and its citation chips.
@@ -30,9 +33,10 @@ That runs on mocks (in-memory data, canned AI replies). To run the real engine l
 - From the Expo app on a phone, use your computer's LAN IP, for example `uvicorn app.main:app --reload --host 0.0.0.0`, then call `http://192.168.x.x:8000`.
 - Tests: `pytest`. To also run every API test against Postgres: `createdb nudge_test`, `NUDGE_DATABASE_URL=postgresql:///nudge_test python -m scripts.db reset`, then `NUDGE_TEST_DATABASE_URL=postgresql:///nudge_test pytest`. `tests/test_examples.py` checks every endpoint returns the same shape as its example JSON file (planned endpoints are skipped).
 
-### Mock accounts
+### Example accounts
 
-Any non-empty password works. The token is `mock-{userId}`.
+With `NUDGE_AUTH=mock` (the default) any non-empty password works and the token is `mock-{userId}`.
+With `NUDGE_AUTH=jwt` they use `NUDGE_SEED_PASSWORD`, and new accounts come from `POST /auth/signup`.
 
 | Email | Role | Notes |
 |---|---|---|
@@ -94,6 +98,9 @@ go to Gemini as numbered sources with Nudge's rules (`integrations/ai.py`: cours
 setting is on, never reveal solution keys). Gemini returns the reply and which sources it used; those become the
 citation chips. Solution keys are only searched when a student sends their own work.
 
+**Accounts** (`NUDGE_AUTH=jwt`): passwords are stored as salted scrypt hashes, and login returns a token signed with
+`NUDGE_JWT_SECRET` that lasts 30 days. `POST /auth/signup` creates student or teacher accounts.
+
 **Reliability:** every Gemini call has a timeout. When a model is overloaded (503) or times out, the next model in the
 list is tried, then the whole list once more. If all fail, the API answers `503 nudge_busy` and nothing is saved.
 
@@ -102,7 +109,6 @@ list is tried, then the whole list once more. If all fail, the API answers `503 
 | Mock | What to do | Switch |
 |---|---|---|
 | Cloud file storage | Write a cloud `StorageClient` in `integrations/storage.py` and return it from `build_storage`. | `NUDGE_STORAGE=...` |
-| Login | Password hashes and signed tokens in `integrations/auth.py`, plus `POST /auth/signup`. | add a value to `auth` in `config.py` |
 
 Real credentials go in `nudge-api/.env`, which git ignores.
 
@@ -112,13 +118,14 @@ Each JSON file has the method, path, the screens that use it, the TypeScript typ
 
 The types are in [`nudge-types.ts`](nudge-types.ts). Each example response is one filled-in instance of the type named in its `types.response` field, and field names match exactly.
 
-Every request except login sends `Authorization: Bearer {token}`. After login, students use `/student/...` and teachers use `/teacher/...`; these reject the other role's token. The chat endpoints under `/threads` accept either role and check the role inside: students can use threads in courses they are enrolled in, teachers in courses they teach. Each thread records its `ownerRole`.
+Every request except login and sign-up sends `Authorization: Bearer {token}`. After login, students use `/student/...` and teachers use `/teacher/...`; these reject the other role's token. The chat endpoints under `/threads` accept either role and check the role inside: students can use threads in courses they are enrolled in, teachers in courses they teach. Each thread records its `ownerRole`.
 
 ## Shared
 
 | Method | Path | What it does | File |
 |---|---|---|---|
 | POST | `/auth/login` | Sign in as a student or teacher. | [01](shared/01-post-auth-login.json) |
+| POST | `/auth/signup` | Create a student or teacher account and sign in. | [06](shared/06-post-auth-signup.json) |
 | GET | `/threads` | List your past chats, newest first (`?q=` to search by title). | [02](shared/02-get-threads.json) |
 | POST | `/threads` | Start a new chat in a course, optionally tied to an assignment. | [03](shared/03-post-threads.json) |
 | GET | `/threads/{threadId}` | Get one chat and all its messages, including Nudge's citations. | [04](shared/04-get-thread.json) |

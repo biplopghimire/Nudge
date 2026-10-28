@@ -74,6 +74,7 @@ Every request except login sends `Authorization: Bearer {token}`. After login, s
 | Method | Path | Description |
 |---|---|---|
 | POST | `/auth/login` | Sign in as a student or teacher |
+| POST | `/auth/signup` | Create a student or teacher account and sign in |
 | GET | `/threads` | Your past chats, newest first (`?q=` to search by title) |
 | POST | `/threads` | Start a chat in a course, optionally tied to an assignment |
 | GET | `/threads/{threadId}` | One chat and all its messages, with citations |

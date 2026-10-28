@@ -117,6 +117,18 @@ class PostgresRepository(Repository):
         )
         return User(**row) if row else None
 
+    def create_user(self, user: User, password_hash: str | None) -> User:
+        row = self._one(
+            "insert into users (id, name, email, role, department, notifications, password_hash) "
+            "values (%(id)s, %(name)s, %(email)s, %(role)s, %(department)s, %(notifications)s::jsonb, %(hash)s) "
+            "returning id, name, email, role, department, notifications, created_at",
+            {**user.__dict__, "notifications": json.dumps(user.notifications), "hash": password_hash},
+        )
+        return User(**row)
+
+    def get_password_hash(self, user_id: str) -> str | None:
+        return self._value("select password_hash from users where id = %(id)s", {"id": user_id})
+
     def update_user_notifications(self, user_id: str, changes: dict[str, bool]) -> dict[str, bool]:
         return self._value(
             "update users set notifications = notifications || %(changes)s::jsonb "

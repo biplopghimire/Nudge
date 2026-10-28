@@ -15,6 +15,8 @@ from pathlib import Path
 
 import httpx
 
+from app.config import get_settings
+
 ROOT = Path(__file__).resolve().parent.parent
 LECTURE = ROOT / "samples" / "lecture-7-integration-by-parts.pdf"
 PHOTO = ROOT.parent / "api-tests" / "samples" / "handwritten-work.jpg"
@@ -22,7 +24,9 @@ COURSE = "c0000000-0272-4000-8000-000000000001"  # 67-272 Sec 1 from the seed
 
 
 def login(http: httpx.Client, email: str) -> dict[str, str]:
-    response = http.post("/auth/login", json={"email": email, "password": "demo"})
+    # The example accounts' password (any password works with mock login).
+    password = get_settings().seed_password or "demo"
+    response = http.post("/auth/login", json={"email": email, "password": password})
     response.raise_for_status()
     return {"Authorization": f"Bearer {response.json()['token']}"}
 

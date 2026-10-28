@@ -39,6 +39,13 @@ class Repository(ABC):
     def get_user_by_email(self, email: str) -> User | None: ...
 
     @abstractmethod
+    def create_user(self, user: User, password_hash: str | None) -> User:
+        """Emails are unique, compared case-insensitively."""
+
+    @abstractmethod
+    def get_password_hash(self, user_id: str) -> str | None: ...
+
+    @abstractmethod
     def update_user_notifications(self, user_id: str, changes: dict[str, bool]) -> dict[str, bool]:
         """Merge `changes` into users.notifications and return the full result."""
 

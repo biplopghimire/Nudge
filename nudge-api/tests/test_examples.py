@@ -42,6 +42,8 @@ def call_example(client, example: dict):
     for name, value in (request.get("params") or {}).items():
         path = path.replace("{" + name + "}", value)
 
+    if path == "/auth/signup":
+        return client.post(path, json={**request["body"], "password": "long enough"})
     if path.startswith("/auth"):
         return client.post(path, json={"email": SAM, "password": "x"})
 

@@ -14,7 +14,7 @@ from app.config import Settings
 from app.domain import User
 from app.errors import forbidden
 from app.integrations.ai import AIClient, MockAIClient
-from app.integrations.auth import AuthProvider, MockAuthProvider
+from app.integrations.auth import AuthProvider, JWTAuthProvider, MockAuthProvider
 from app.integrations.storage import LocalStorage, MockStorage, StorageClient
 from app.repositories.base import Repository
 from app.repositories.memory import InMemoryRepository
@@ -62,6 +62,10 @@ def build_storage(settings: Settings) -> StorageClient:
 
 
 def build_auth(settings: Settings) -> AuthProvider:
+    if settings.auth == "jwt":
+        if not settings.jwt_secret:
+            raise RuntimeError("Set NUDGE_JWT_SECRET to use real login.")
+        return JWTAuthProvider(settings.jwt_secret, settings.token_days)
     return MockAuthProvider()
 
 

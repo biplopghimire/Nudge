@@ -210,6 +210,14 @@ export interface LoginResponse {
   user: User;
 }
 
+// POST /auth/signup (responds 201 with a LoginResponse)
+export interface SignupRequest {
+  name: string;
+  email: string;
+  password: string; // at least 8 characters
+  role: Role;
+}
+
 // GET /threads?q=
 export interface GetThreadsResponse {
   threads: ThreadSummary[];

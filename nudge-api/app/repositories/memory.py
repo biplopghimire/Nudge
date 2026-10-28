@@ -33,6 +33,7 @@ class InMemoryRepository(Repository):
         seed = copy.deepcopy(seed) if seed else default_seed()
         self._lock = threading.RLock()
         self.users = {u.id: u for u in seed.users}
+        self.password_hashes: dict[str, str | None] = {}
         self.courses = {c.id: c for c in seed.courses}
         self.enrollments: list[tuple[str, str]] = list(seed.enrollments)
         self.materials = {m.id: m for m in seed.materials}
@@ -51,6 +52,17 @@ class InMemoryRepository(Repository):
     def get_user_by_email(self, email: str) -> User | None:
         email = email.strip().lower()
         return next((u for u in self.users.values() if u.email.lower() == email), None)
+
+    def create_user(self, user: User, password_hash: str | None) -> User:
+        with self._lock:
+            if self.get_user_by_email(user.email):
+                raise ValueError(f"Email already in use: {user.email}")
+            self.users[user.id] = user
+            self.password_hashes[user.id] = password_hash
+            return user
+
+    def get_password_hash(self, user_id: str) -> str | None:
+        return self.password_hashes.get(user_id)
 
     def update_user_notifications(self, user_id: str, changes: dict[str, bool]) -> dict[str, bool]:
         with self._lock:

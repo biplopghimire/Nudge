@@ -11,6 +11,7 @@ create table users (
   role        text not null check (role in ('student', 'teacher')),
   department  text,                                     -- added: teacher profile
   notifications jsonb not null default '{}',            -- {"deadlineReminders": true, ...}
+  password_hash text,                                   -- added: scrypt hash, null for mock-login accounts
   created_at  timestamptz not null default now()
 );
 

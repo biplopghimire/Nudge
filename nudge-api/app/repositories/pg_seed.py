@@ -1,6 +1,5 @@
 """Load SeedData (the same example data the in-memory repository uses) into Postgres."""
 
-import json
 from collections.abc import Callable
 
 from app.repositories.postgres import PostgresRepository
@@ -16,14 +15,16 @@ def clear(repo: PostgresRepository) -> None:
     repo._execute(f"truncate {', '.join(TABLES)} cascade")
 
 
-def insert_seed(repo: PostgresRepository, seed: SeedData, embed: Callable[[list[str]], list[list[float]]]) -> None:
-    """`embed` turns chunk text into vectors (the mock or Gemini)."""
-    for u in seed.users:
-        repo._execute(
-            "insert into users (id, name, email, role, department, notifications) "
-            "values (%(id)s, %(name)s, %(email)s, %(role)s, %(department)s, %(notifications)s::jsonb)",
-            {**u.__dict__, "notifications": json.dumps(u.notifications)},
-        )
+def insert_seed(
+    repo: PostgresRepository,
+    seed: SeedData,
+    embed: Callable[[list[str]], list[list[float]]],
+    password_hash: str | None = None,
+) -> None:
+    """`embed` turns chunk text into vectors (the mock or Gemini). Every example
+    account gets `password_hash` (None works only with mock login)."""
+    for user in seed.users:
+        repo.create_user(user, password_hash)
     for course in seed.courses:
         repo.create_course(course)
     for user_id, course_id in seed.enrollments:
