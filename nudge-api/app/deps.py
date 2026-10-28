@@ -57,7 +57,9 @@ def build_storage(settings: Settings) -> StorageClient:
     if settings.storage == "local":
         return LocalStorage(settings.local_storage_dir, settings.bucket)
     if settings.storage == "gcs":
-        raise NotImplementedError("Cloud storage comes in step 2 (app/integrations/storage.py).")
+        from app.integrations.storage import GCSStorage
+
+        return GCSStorage(settings.bucket, settings.gcs_signer)
     return MockStorage(settings.bucket)
 
 

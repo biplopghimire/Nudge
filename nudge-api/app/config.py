@@ -34,8 +34,10 @@ class Settings(BaseSettings):
     gemini_embedding_model: str = "gemini-embedding-2"
     gemini_timeout_seconds: float = 45.0
 
-    # File storage. "local" keeps files in local_storage_dir.
+    # File storage. "local" keeps files in local_storage_dir; "gcs" uses the bucket,
+    # signing links as gcs_signer (the backend's service account).
     bucket: str = "nudge-course-files"
+    gcs_signer: str | None = "nudge-backend@nudge-513020.iam.gserviceaccount.com"
     local_storage_dir: str = ".storage"
 
     # App behavior.
