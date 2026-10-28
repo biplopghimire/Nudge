@@ -17,7 +17,7 @@ import psycopg
 
 from app.config import get_settings
 from app.deps import build_ai, build_auth
-from app.repositories.pg_seed import clear, insert_seed
+from app.repositories.pg_seed import TABLES, clear, insert_seed
 from app.repositories.postgres import PostgresRepository
 from app.repositories.seed import default_seed
 
@@ -25,9 +25,10 @@ SCHEMA = Path(__file__).resolve().parent.parent / "db" / "schema.sql"
 
 
 def reset(database_url: str) -> None:
+    # Drop only Nudge's tables, so anything else in the database (like Supabase's
+    # own settings on the public schema) is left alone.
     with psycopg.connect(database_url, autocommit=True) as conn:
-        conn.execute("drop schema if exists public cascade")
-        conn.execute("create schema public")
+        conn.execute(f"drop table if exists {', '.join(TABLES)} cascade")
         conn.execute(SCHEMA.read_text())
     print(f"Created tables from {SCHEMA.name}")
 
