@@ -34,14 +34,25 @@ _NUMBERED_TITLE = re.compile(
 )
 
 
+# iOS adds the photo's ID to picked file names: "IMG_0042-70B62FA5-76AA-41FD-B35E-BB958B925F72"
+_PHOTO_ID = re.compile(r"-[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$", re.IGNORECASE)
+_SCREENSHOT = re.compile(r"^Screen ?shot \d{4}-(\d{2})-(\d{2})\b", re.IGNORECASE)
+MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
 def citation_title(material_title: str) -> str:
     """Short name for citation chips.
 
     'Lecture 6 - Substitution.pdf' -> 'Lecture 6'
     'lecture-7-integration-by-parts.pdf' -> 'Lecture 7'
     'Problem_Set_4.pdf' -> 'Problem Set 4', 'Syllabus.pdf' -> 'Syllabus'
+    'Screenshot 2026-10-29 at 12.25.36 AM-70B62FA5-....png' -> 'Screenshot Oct 29'
     """
     title = re.sub(r"\.[A-Za-z0-9]{2,5}$", "", material_title).strip()
+    title = _PHOTO_ID.sub("", title)
+    screenshot = _SCREENSHOT.match(title)
+    if screenshot:
+        return f"Screenshot {MONTHS[int(screenshot.group(1)) - 1]} {int(screenshot.group(2))}"
     if " " not in title:
         title = re.sub(r"[-_]+", " ", title)
     title = title.split(" - ")[0].strip()

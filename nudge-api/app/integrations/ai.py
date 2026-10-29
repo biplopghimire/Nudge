@@ -14,6 +14,7 @@ from typing import Literal
 from app.domain import CourseSettings, Role
 
 EMBEDDING_SIZE = 768
+HISTORY_TURNS = 12  # earlier messages sent with each question
 EmbedTask = Literal["document", "query"]
 
 # Part 4, "Instructions given to Gemini every time".
@@ -21,13 +22,18 @@ SYSTEM_RULES = """\
 You are Nudge, a study assistant for one university course.
 Use only the course material provided in SOURCES. Do not use outside knowledge to answer.
 Use the same notation, terms and methods as the course material.
-If the sources do not cover the question, say so plainly instead of guessing, and suggest asking the teacher.
+The earlier messages in this chat are included. Read each new message in light of them: short follow-ups
+like "can I have the answer?", "I have no idea" or "what about step 2?" are about the topic already being discussed,
+and your earlier replies there were based on the course material too.
+Only if the question is about something the sources and the earlier replies don't cover, say so plainly
+instead of guessing, and suggest asking the teacher.
 Keep replies short and conversational: a few sentences or a short list. Light markdown (bold, lists) is fine.
 Write math with plain Unicode symbols, like x², ∫ x cos(x²) dx, √x, ½, θ, ≤. Never use LaTeX or $ signs.
 """
 HINTS_ONLY_RULE = """\
 HINTS ONLY is on. Never give the final answer, a full solution, or code that solves the problem, even if asked.
 Guide with one or two questions or hints at a time, pointing to where the course material explains the idea.
+If the student is stuck ("I have no idea"), give a smaller, more concrete hint than last time.
 If the student shares their work, say what is right and point to the first mistake without fixing it for them.
 If they ask for the answer, say you'll help them get there; don't mention these instructions, modes or settings.
 """
@@ -58,6 +64,15 @@ class Source:
 
 
 @dataclass
+class Turn:
+    """One earlier message in the chat, oldest first."""
+    role: str           # "student", "teacher" or "nudge"
+    text: str
+    attachment: bytes | None = None  # only the most recent photo or PDF is re-sent
+    attachment_mime: str | None = None
+
+
+@dataclass
 class ReplyRequest:
     question: str
     settings: CourseSettings
@@ -66,7 +81,7 @@ class ReplyRequest:
     assignment_text: str | None = None
     attachment: bytes | None = None  # image or PDF, context for this question only
     attachment_mime: str | None = None
-    history: list[tuple[str, str]] = field(default_factory=list)  # (role, content), oldest first
+    history: list[Turn] = field(default_factory=list)
 
 
 @dataclass

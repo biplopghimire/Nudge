@@ -9,6 +9,7 @@ from app.domain import Assignment, Course, CourseSettings, Material, MaterialKin
 from app.errors import ApiError, bad_request, not_found
 from app.integrations.storage import StorageClient
 from app.repositories.base import Repository
+from app.schemas.student import MaterialLinkResponse
 from app.schemas.teacher import (
     CanvasImportRequest,
     CopyFrom,
@@ -27,7 +28,6 @@ from app.schemas.teacher import (
     TeacherUserOut,
     TrendingTopicOut,
 )
-from app.schemas.student import MaterialLinkResponse
 from app.services.common import new_id, semester_sort_key, semester_start, utc_now
 from app.services.views import Views
 

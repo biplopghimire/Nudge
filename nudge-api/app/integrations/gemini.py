@@ -18,6 +18,7 @@ import httpx
 
 from app.integrations.ai import (
     EMBEDDING_SIZE,
+    HISTORY_TURNS,
     AIClient,
     AIUnavailable,
     EmbedTask,
@@ -35,7 +36,6 @@ RETRY_STATUSES = {429, 500, 502, 503, 504}
 EMBED_BATCH = 50        # texts per batchEmbedContents call (each text counts toward the per-minute limit)
 EMBED_RATE_LIMIT_RETRIES = 6  # an upload waits out up to ~6 minutes of rate limiting
 PAGES_PER_PART = 8      # PDF pages sent per transcription call
-HISTORY_TURNS = 12      # earlier messages sent with each question
 
 TRANSCRIBE_PROMPT = """\
 Transcribe every page of this course document into clean text for a search index.
@@ -286,16 +286,19 @@ class GeminiClient(AIClient):
 
     def generate_reply(self, request: ReplyRequest) -> Reply:
         contents: list[dict[str, Any]] = []
-        for role, text in request.history[-HISTORY_TURNS:]:
-            if text.strip():
-                contents.append({"role": "model" if role == "nudge" else "user", "parts": [{"text": text}]})
+        for turn in request.history[-HISTORY_TURNS:]:
+            parts: list[dict] = [{"text": turn.text}] if turn.text.strip() else []
+            if turn.attachment and turn.attachment_mime:
+                parts.append(_inline(turn.attachment, turn.attachment_mime))
+            if parts:
+                contents.append({"role": "model" if turn.role == "nudge" else "user", "parts": parts})
 
         prompt = [format_sources(request.sources)]
         if request.assignment_text:
             prompt.append(f"CURRENT ASSIGNMENT (the chat is about this):\n{request.assignment_text}")
         question = request.question or "Here is my work. Can you check it?"
         prompt.append(f"QUESTION:\n{question}")
-        parts: list[dict] = [{"text": "\n\n".join(prompt)}]
+        parts = [{"text": "\n\n".join(prompt)}]
         if request.attachment and request.attachment_mime:
             parts.append(_inline(request.attachment, request.attachment_mime))
         contents.append({"role": "user", "parts": parts})

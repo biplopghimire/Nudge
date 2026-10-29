@@ -9,6 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Query, Uplo
 from app.deps import current_teacher, get_ingestion_service, get_teacher_service
 from app.domain import MaterialKind, User
 from app.errors import bad_request
+from app.schemas.student import MaterialLinkResponse
 from app.schemas.teacher import (
     CanvasImportRequest,
     CreateCourseRequest,
@@ -23,7 +24,6 @@ from app.schemas.teacher import (
     UpdateCourseSettingsRequest,
     UpdateTeacherMeRequest,
 )
-from app.schemas.student import MaterialLinkResponse
 from app.services.ingestion import IngestionService
 from app.services.teacher import TeacherService
 

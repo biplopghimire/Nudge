@@ -7,10 +7,11 @@ only, and teacher threads are left out of dashboard counts.
 
 from app.domain import AttachmentSource, Course, Message, Thread, User
 from app.errors import bad_request, not_found
+from app.integrations.ai import HISTORY_TURNS
 from app.integrations.storage import StorageClient
 from app.repositories.base import Repository
 from app.schemas.threads import SendMessageResponse, ThreadDetailResponse, ThreadResponse, ThreadsResponse
-from app.services.chat import ChatService
+from app.services.chat import ChatService, EarlierAttachment
 from app.services.common import new_id, utc_now
 from app.services.views import Views
 
@@ -42,6 +43,16 @@ class ThreadService:
         if not allowed:
             raise not_found("Course")
         return course
+
+    def _latest_attachment(self, history: list[Message]) -> EarlierAttachment | None:
+        """The last photo or PDF still within the history the AI sees, so "what about step 3?" works."""
+        message = next((m for m in reversed(history[-HISTORY_TURNS:]) if m.attachment_path), None)
+        if not message:
+            return None
+        extension = message.attachment_path.rsplit(".", 1)[-1]
+        mime_type = next((mime for mime, ext in ATTACHMENT_EXTENSIONS.items() if ext == extension), None)
+        data = self.storage.download(message.attachment_path) if mime_type else b""
+        return EarlierAttachment(message.id, data, mime_type) if data else None
 
     def _own_thread(self, user: User, thread_id: str) -> Thread:
         thread = self.repo.get_thread(thread_id)
@@ -117,9 +128,10 @@ class ThreadService:
             self.storage.upload(attachment_path, attachment, attachment_mime)
 
         history = self.repo.list_messages(thread.id)
+        earlier = None if attachment else self._latest_attachment(history)
         asked_at = utc_now()
         # Ask first, so a failed answer doesn't leave a question with no reply.
-        answer = self.chat.answer(thread, course, content, history, attachment, attachment_mime)
+        answer = self.chat.answer(thread, course, content, history, attachment, attachment_mime, earlier)
         sent = self.repo.add_message(
             Message(
                 id=new_id(),

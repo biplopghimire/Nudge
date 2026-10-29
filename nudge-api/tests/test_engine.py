@@ -6,19 +6,20 @@ from pathlib import Path
 import httpx
 import pytest
 
-from app.domain import Chunk, CourseSettings, Material
+from app.domain import Chunk, CourseSettings, Material, Message
 from app.integrations.ai import (
     AIUnavailable,
     MockAIClient,
     ReplyRequest,
     Source,
+    Turn,
     build_instructions,
     format_sources,
 )
 from app.integrations.gemini import GeminiClient, split_pdf
 from app.integrations.storage import LocalStorage
 from app.repositories.memory import InMemoryRepository
-from app.services.chat import merge_rankings
+from app.services.chat import ChatService, merge_rankings
 from app.services.common import citation_title
 from app.services.ingestion import IngestionService, split_into_chunks
 from tests.test_threads import C272, PROBLEM_3, send
@@ -185,6 +186,9 @@ def test_citation_titles():
     assert citation_title("lecture-7-integration-by-parts.pdf") == "Lecture 7"
     assert citation_title("Problem_Set_4.pdf") == "Problem Set 4"
     assert citation_title("Syllabus.pdf") == "Syllabus"
+    screenshot = "Screenshot 2026-10-29 at 12.25.36 AM-70B62FA5-76AA-41FD-B35E-BB958B925F72.png"
+    assert citation_title(screenshot) == "Screenshot Oct 29"
+    assert citation_title("IMG_0042-70B62FA5-76AA-41FD-B35E-BB958B925F72.jpg") == "IMG 0042"
 
 
 def test_ai_outage_returns_503_and_saves_nothing(client, sam, monkeypatch):
@@ -268,3 +272,64 @@ def test_teacher_can_retry_a_failed_file(client, prof_h):
 def test_students_cannot_retry(client, sam):
     lecture = "d0000000-0006-4000-8000-000000000001"
     assert client.post(f"/teacher/materials/{lecture}/retry", headers=sam).status_code == 403
+
+
+# ---- follow-ups ----
+
+def test_follow_up_searches_with_the_conversation():
+    """'Can I have the answer?' names no topic; the earlier messages do."""
+    repo, ai, COURSE = InMemoryRepository(), MockAIClient(), "course-with-three-chunks"
+    texts = {
+        "interval": "2D interval counting: build a persistent tree of segments sorted by y coordinate",
+        "parens": "Paren matching: reduce each subtree to unmatched open and close counts",
+        "answer": "Can you give the answer to the select function? It returns the answer by index",
+    }
+    repo.add_chunks([Chunk(key, COURSE, key, text, embedding=ai.embed([text])[0]) for key, text in texts.items()])
+    history = [
+        Message("1", "t", "teacher", "Explain the 2D interval counting problem", None),
+        Message("2", "t", "nudge", "It counts the segments below a query point using a persistent tree.", None),
+    ]
+    chat = ChatService(repo, ai)
+    question = "Can I have the answer?"
+    alone = chat.retrieve(COURSE, question, False)
+    with_context = chat.retrieve(COURSE, question, False, chat._search_context(history))
+    assert alone[0].id == "answer"
+    assert with_context[0].id == "interval"
+
+
+def test_earlier_photo_is_resent_with_follow_ups(client, sam, monkeypatch):
+    seen = []
+    ai = client.app.state.container.ai
+    original = ai.generate_reply
+    monkeypatch.setattr(ai, "generate_reply", lambda request: seen.append(request) or original(request))
+
+    send(client, sam, PROBLEM_3, attachment=("work.png", b"png-bytes", "image/png"), source="camera")
+    send(client, sam, PROBLEM_3, "What about step 3?")
+
+    follow_up = seen[-1]
+    assert follow_up.attachment is None
+    photo_turns = [t for t in follow_up.history if t.attachment]
+    assert len(photo_turns) == 1
+    assert photo_turns[0].attachment == b"png-bytes"
+    assert photo_turns[0].text.startswith("[sent a photo]")
+
+
+def test_gemini_gets_history_with_attachments():
+    bodies = []
+
+    def handler(request):
+        bodies.append(json.loads(request.content))
+        return httpx.Response(200, json=reply_body({"reply": "Step 3 drops a sign.", "sources": []}))
+
+    history = [
+        Turn("student", "[sent a photo]", b"img", "image/png"),
+        Turn("nudge", "Step 2 looks right."),
+    ]
+    fake_gemini(handler, chat_models=["m"]).generate_reply(request_for([], history=history))
+    contents = bodies[0]["contents"]
+    assert [c["role"] for c in contents] == ["user", "model", "user"]
+    assert contents[0]["parts"][1]["inline_data"]["mime_type"] == "image/png"
+
+
+def test_instructions_cover_follow_ups():
+    assert "follow-ups" in build_instructions(request_for([]))

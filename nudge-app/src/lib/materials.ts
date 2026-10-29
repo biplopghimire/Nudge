@@ -72,7 +72,9 @@ export async function pickMaterials(source: AttachChoice = "files"): Promise<Pic
   const stamp = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" });
   return result.assets.map((asset, index) => {
     const type = asset.mimeType ?? "image/jpeg";
-    const name = asset.fileName ?? `Photo ${stamp}${result.assets.length > 1 ? ` (${index + 1})` : ""}.jpg`;
+    // iOS appends the photo's ID: "Screenshot ... AM-70B62FA5-76AA-41FD-B35E-BB958B925F72.png"
+    const picked = asset.fileName?.replace(/-[0-9A-F]{8}(-[0-9A-F]{4}){3}-[0-9A-F]{12}(?=\.\w+$)/i, "");
+    const name = picked ?? `Photo ${stamp}${result.assets.length > 1 ? ` (${index + 1})` : ""}.jpg`;
     return { uri: asset.uri, name, type, size: asset.fileSize ?? 0, ...guessKind(name, type) };
   });
 }
