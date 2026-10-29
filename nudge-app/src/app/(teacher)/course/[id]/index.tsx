@@ -1,20 +1,19 @@
-import type { Material } from "@api";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { Skeleton, Spinner, useToast } from "heroui-native";
 import { useState } from "react";
 import { RefreshControl, Text, View } from "react-native";
-import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 
+import { AttachSheet, type AttachChoice } from "@/components/chat/attach-sheet";
+import { MaterialRow } from "@/components/course/material-row";
 import { Icon } from "@/components/ui/icon";
-import { Badge, Row } from "@/components/ui/list";
 import { BackButton, Screen, SectionLabel } from "@/components/ui/screen";
 import { Tappable } from "@/components/ui/tappable";
 import { api, ApiError } from "@/lib/api";
-import { fileSize } from "@/lib/format";
 import { haptics } from "@/lib/haptics";
-import { KIND_ICON, KIND_LABEL, pickMaterials } from "@/lib/materials";
-import { enterRow, springs } from "@/lib/motion";
+import { MATERIAL_SOURCES, pickMaterials } from "@/lib/materials";
+import { enterRow } from "@/lib/motion";
 import { keys, useTeacherCourse } from "@/lib/queries";
 import { useStartChat } from "@/lib/start-chat";
 
@@ -25,9 +24,22 @@ export default function TeacherCourse() {
   const { toast } = useToast();
   const startChat = useStartChat();
   const [uploading, setUploading] = useState(0);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  async function upload() {
-    const files = await pickMaterials();
+  const retry = useMutation({
+    mutationFn: (materialId: string) => api.retryMaterial(materialId),
+    onSuccess: () => {
+      haptics.success();
+      client.invalidateQueries({ queryKey: keys.teacherCourse(id) });
+    },
+    onError: (error) => {
+      haptics.error();
+      toast.show({ variant: "danger", label: "Couldn't retry", description: error instanceof ApiError ? error.message : undefined });
+    },
+  });
+
+  async function upload(source: AttachChoice) {
+    const files = await pickMaterials(source);
     if (!files.length) return;
     setUploading(files.length);
     try {
@@ -95,7 +107,7 @@ export default function TeacherCourse() {
 
       <View className="flex-row items-end justify-between">
         <SectionLabel>Materials</SectionLabel>
-        <Tappable onPress={upload} disabled={uploading > 0} className="mb-2 flex-row items-center gap-1.5" accessibilityRole="button">
+        <Tappable onPress={() => setSheetOpen(true)} disabled={uploading > 0} className="mb-2 flex-row items-center gap-1.5" accessibilityRole="button">
           {uploading > 0 ? <Spinner size="sm" /> : <Icon name="plus" size={13} color="accent" />}
           <Text className="text-[15px] font-semibold text-accent">{uploading > 0 ? `Uploading ${uploading}…` : "Add files"}</Text>
         </Tappable>
@@ -105,18 +117,18 @@ export default function TeacherCourse() {
         <Skeleton className="h-14 rounded-xl" />
       ) : data && data.materials.length > 0 ? (
         data.materials.map((material, index) => (
-          <Row
+          <MaterialRow
             key={material.id}
+            material={material}
             index={index + 1}
-            icon={KIND_ICON[material.kind]}
-            title={material.title}
-            subtitle={`${material.restricted ? "Hidden from students" : KIND_LABEL[material.kind]} · ${fileSize(material.sizeBytes)}`}
-            trailing={<StatusChip material={material} />}
+            retrying={retry.isPending && retry.variables === material.id}
+            onRetry={() => retry.mutate(material.id)}
           />
         ))
       ) : (
         <Text className="py-6 text-center text-[15px] text-muted">Add slides, notes or homework so Nudge can answer from them.</Text>
       )}
+      <AttachSheet isOpen={sheetOpen} onOpenChange={setSheetOpen} onChoose={upload} options={MATERIAL_SOURCES} />
     </Screen>
   );
 }
@@ -127,22 +139,5 @@ function QuickAction({ icon, label, onPress, busy }: { icon: "sliders" | "sparkl
       {busy ? <Spinner size="sm" /> : <Icon name={icon} size={16} color="accent" />}
       <Text className="text-[15px] font-semibold text-foreground">{label}</Text>
     </Tappable>
-  );
-}
-
-function StatusChip({ material }: { material: Material }) {
-  if (material.status === "processing") {
-    return (
-      <View className="flex-row items-center gap-1.5">
-        <Spinner size="sm" />
-        <Text className="text-[12px] font-medium text-muted">Reading</Text>
-      </View>
-    );
-  }
-  if (material.status === "failed") return <Badge tone="blush">Failed</Badge>;
-  return (
-    <Animated.View entering={ZoomIn.springify().damping(springs.bouncy.damping)}>
-      <Icon name="checkCircle" size={18} color="success" />
-    </Animated.View>
   );
 }

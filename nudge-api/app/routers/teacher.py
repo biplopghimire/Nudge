@@ -2,8 +2,9 @@
 hands off to TeacherService."""
 
 from typing import get_args
+from urllib.parse import unquote
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Query, UploadFile
 
 from app.deps import current_teacher, get_ingestion_service, get_teacher_service
 from app.domain import MaterialKind, User
@@ -22,6 +23,7 @@ from app.schemas.teacher import (
     UpdateCourseSettingsRequest,
     UpdateTeacherMeRequest,
 )
+from app.schemas.student import MaterialLinkResponse
 from app.services.ingestion import IngestionService
 from app.services.teacher import TeacherService
 
@@ -89,7 +91,7 @@ def upload_material(
     response = service.upload_material(
         teacher,
         course_id,
-        file.filename or "Untitled",
+        unquote(file.filename or "") or "Untitled",  # Expo percent-encodes multipart file names
         file.file.read(),
         file.content_type,
         kind,
@@ -97,6 +99,31 @@ def upload_material(
     )
     background.add_task(ingestion.process_material, response.material.id, file.content_type)
     return response
+
+
+@router.post("/materials/{material_id}/retry", response_model=MaterialResponse)
+def retry_material(
+    material_id: str,
+    background: BackgroundTasks,
+    teacher: User = Teacher,
+    service: TeacherService = Service,
+    ingestion: IngestionService = Depends(get_ingestion_service),
+):
+    """Read a file that failed again, without uploading it again."""
+    response = service.retry_material(teacher, material_id)
+    background.add_task(ingestion.process_material, response.material.id)
+    return response
+
+
+@router.get("/materials/{material_id}/link", response_model=MaterialLinkResponse)
+def material_link(
+    material_id: str,
+    page: int | None = Query(None, ge=1, description="Page to open, from the citation"),
+    teacher: User = Teacher,
+    service: TeacherService = Service,
+):
+    """A temporary link (15 minutes) to open one of your course files, from a test chat citation."""
+    return service.material_link(teacher, material_id, page)
 
 
 @router.get("/courses/{course_id}/dashboard", response_model=DashboardResponse)

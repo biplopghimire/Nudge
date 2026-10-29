@@ -7,6 +7,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import Animated, { FadeInDown, FadeOut, LinearTransition } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { AttachSheet, type AttachChoice } from "@/components/chat/attach-sheet";
 import { Icon } from "@/components/ui/icon";
 import { Badge } from "@/components/ui/list";
 import { BackButton } from "@/components/ui/screen";
@@ -15,7 +16,7 @@ import { Tappable } from "@/components/ui/tappable";
 import { api, ApiError } from "@/lib/api";
 import { fileSize } from "@/lib/format";
 import { haptics } from "@/lib/haptics";
-import { KIND_ICON, KIND_LABEL, pickMaterials, type PickedFile } from "@/lib/materials";
+import { KIND_ICON, KIND_LABEL, MATERIAL_SOURCES, pickMaterials, type PickedFile } from "@/lib/materials";
 import { layoutSpring, springs } from "@/lib/motion";
 import { keys } from "@/lib/queries";
 
@@ -32,11 +33,12 @@ export default function NewCourse() {
   const [files, setFiles] = useState<PickedFile[]>([]);
   const [step, setStep] = useState<Step>("idle");
   const [uploaded, setUploaded] = useState(0);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const ready = code.trim().length >= 2 && section.trim().length > 0 && step === "idle";
 
-  async function addFiles() {
-    const picked = await pickMaterials();
+  async function addFiles(source: AttachChoice) {
+    const picked = await pickMaterials(source);
     if (picked.length) {
       haptics.tap();
       setFiles((current) => [...current, ...picked.filter((p) => !current.some((c) => c.uri === p.uri))]);
@@ -107,12 +109,12 @@ export default function NewCourse() {
 
         <Text className="mb-3 mt-8 text-[13px] font-medium text-muted">Course materials</Text>
         <Tappable
-          onPress={addFiles}
+          onPress={() => setSheetOpen(true)}
           className="flex-row items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border py-5"
           accessibilityRole="button"
         >
           <Icon name="plus" size={14} color="accent" />
-          <Text className="text-[15px] font-semibold text-accent">Add slides, notes, homework</Text>
+          <Text className="text-[15px] font-semibold text-accent">Add slides, notes, photos</Text>
         </Tappable>
 
         <Animated.View layout={layoutSpring} className="mt-2">
@@ -163,6 +165,7 @@ export default function NewCourse() {
           )}
         </Button>
       </View>
+      <AttachSheet isOpen={sheetOpen} onOpenChange={setSheetOpen} onChoose={addFiles} options={MATERIAL_SOURCES} />
     </View>
   );
 }

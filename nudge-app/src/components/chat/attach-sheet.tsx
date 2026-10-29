@@ -7,18 +7,22 @@ import { Tappable } from "@/components/ui/tappable";
 
 export type AttachChoice = "camera" | "library" | "files";
 
-const OPTIONS: { choice: AttachChoice; icon: IconName; title: string; detail: string }[] = [
+export type AttachOption = { choice: AttachChoice; icon: IconName; title: string; detail: string };
+
+const OPTIONS: AttachOption[] = [
   { choice: "camera", icon: "camera", title: "Camera", detail: "Snap your work" },
   { choice: "library", icon: "photo", title: "Photo library", detail: "Pick an existing photo" },
   { choice: "files", icon: "file", title: "Files", detail: "PDF or document" },
 ];
 
-/** The + menu: camera, photo library or a file. */
+/** The + menu: camera, photo library or a file. Pass `options` to change the wording. */
 export function AttachSheet({
   isOpen,
   onOpenChange,
   onChoose,
+  options = OPTIONS,
 }: {
+  options?: AttachOption[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onChoose: (choice: AttachChoice) => void;
@@ -30,7 +34,7 @@ export function AttachSheet({
         <BottomSheet.Overlay />
         <BottomSheet.Content detached bottomInset={insets.bottom + 10} className="mx-3" backgroundClassName="rounded-[30px]">
           <View className="gap-1 pb-2">
-            {OPTIONS.map((option) => (
+            {options.map((option) => (
               <Tappable
                 key={option.choice}
                 onPress={() => {

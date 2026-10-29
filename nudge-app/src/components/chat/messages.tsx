@@ -81,7 +81,7 @@ export function NudgeReply({ message, reveal, viewerRole }: { message: Message; 
             {message.citations.length > 0 ? (
               <View className="mt-3 flex-row flex-wrap gap-2">
                 {message.citations.map((citation, index) => (
-                  <CitationChip key={`${citation.materialId}-${citation.page}`} citation={citation} index={index} canOpen={viewerRole === "student"} />
+                  <CitationChip key={`${citation.materialId}-${citation.page}`} citation={citation} index={index} viewerRole={viewerRole} />
                 ))}
               </View>
             ) : null}
@@ -104,16 +104,19 @@ export function NudgeReply({ message, reveal, viewerRole }: { message: Message; 
   );
 }
 
-function CitationChip({ citation, index, canOpen }: { citation: Citation; index: number; canOpen: boolean }) {
+function CitationChip({ citation, index, viewerRole }: { citation: Citation; index: number; viewerRole: Role }) {
   const [opening, setOpening] = useState(false);
   const { toast } = useToast();
   const label = citation.page ? `${citation.title} · p.${citation.page}` : citation.title;
 
   async function open() {
-    if (!canOpen) return;
+    if (opening) return;
     setOpening(true);
     try {
-      const link = await api.materialLink(citation.materialId, citation.page);
+      const link =
+        viewerRole === "teacher"
+          ? await api.teacherMaterialLink(citation.materialId, citation.page)
+          : await api.materialLink(citation.materialId, citation.page);
       await WebBrowser.openBrowserAsync(link.page ? `${link.url}#page=${link.page}` : link.url, {
         presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
       });
@@ -129,7 +132,6 @@ function CitationChip({ citation, index, canOpen }: { citation: Citation; index:
     <Animated.View entering={FadeInDown.delay(index * 70).springify().damping(springs.bouncy.damping)}>
       <Tappable
         onPress={open}
-        disabled={!canOpen}
         accessibilityRole="link"
         accessibilityLabel={`Open ${label}`}
         className="flex-row items-center gap-1.5 rounded-full bg-blush px-3 py-1.5"

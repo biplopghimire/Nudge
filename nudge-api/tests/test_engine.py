@@ -97,7 +97,7 @@ def test_embeddings_are_batched_and_unit_length():
         return httpx.Response(200, json={"embeddings": [{"values": [3.0, 4.0] + [0.0] * 766} for _ in batch]})
 
     vectors = fake_gemini(handler, chat_models=["m"]).embed(["text"] * 150, task="query")
-    assert sizes == [100, 50]
+    assert sizes == [50, 50, 50]
     assert len(vectors) == 150 and len(vectors[0]) == 768
     assert vectors[0][:2] == pytest.approx([0.6, 0.8])
 
@@ -197,3 +197,74 @@ def test_ai_outage_returns_503_and_saves_nothing(client, sam, monkeypatch):
     assert response.status_code == 503
     assert response.json()["error"] == "nudge_busy"
     assert len(client.get(f"/threads/{PROBLEM_3}", headers=sam).json()["messages"]) == before
+
+
+def test_upload_embeddings_wait_out_the_rate_limit(monkeypatch):
+    waits = []
+    monkeypatch.setattr("app.integrations.gemini.time.sleep", waits.append)
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        if len(calls) == 1:
+            return httpx.Response(429, json={"error": {"message": "quota", "details": [{"retryDelay": "12s"}]}})
+        batch = json.loads(request.content)["requests"]
+        return httpx.Response(200, json={"embeddings": [{"values": [1.0] + [0.0] * 767} for _ in batch]})
+
+    vectors = fake_gemini(handler, chat_models=["m"]).embed(["a", "b"], task="document")
+    assert len(vectors) == 2
+    assert waits == [12.0]
+
+
+def test_question_embeddings_do_not_wait_long():
+    handler = lambda r: httpx.Response(429, json={"error": {"message": "quota"}})  # noqa: E731
+    with pytest.raises(AIUnavailable):
+        fake_gemini(handler, chat_models=["m"]).embed(["question"], task="query")
+
+
+class RateLimitedAI(MockAIClient):
+    def embed(self, texts, task="document"):
+        error = AIUnavailable("quota")
+        error.rate_limited = True
+        raise error
+
+
+def test_failed_file_records_a_reason_and_progress(tmp_path):
+    repo = InMemoryRepository()
+    storage = LocalStorage(str(tmp_path), "bucket")
+    storage.upload("courses/x/l7.pdf", LECTURE.read_bytes(), "application/pdf")
+    repo.create_material(Material("m9", C272, "Lecture 7.pdf", "slides", 1, "courses/x/l7.pdf"))
+    repo.start_processing("m9")
+    IngestionService(repo, RateLimitedAI(), storage).process_material("m9")
+
+    material = repo.get_material("m9")
+    assert material.status == "failed"
+    assert "usage limit" in material.error
+    assert material.progress >= 75  # it got through reading the pages first
+
+
+def test_missing_text_reason(tmp_path):
+    repo = InMemoryRepository()
+    repo.create_material(Material("m10", C272, "Gone.pdf", "notes", 1, "nowhere.pdf"))
+    IngestionService(repo, MockAIClient(), LocalStorage(str(tmp_path), "b")).process_material("m10")
+    assert repo.get_material("m10").error == "The uploaded file couldn't be found. Upload it again."
+
+
+def test_teacher_can_retry_a_failed_file(client, prof_h):
+    lecture = "d0000000-0006-4000-8000-000000000001"
+    repo = client.app.state.container.repo
+    repo.set_material_status(lecture, "failed", "The AI service was busy while reading this file.")
+
+    detail = client.get(f"/teacher/courses/{C272}", headers=prof_h).json()
+    failed = next(m for m in detail["materials"] if m["id"] == lecture)
+    assert failed["status"] == "failed" and "busy" in failed["error"]
+
+    retried = client.post(f"/teacher/materials/{lecture}/retry", headers=prof_h)
+    assert retried.status_code == 200
+    assert retried.json()["material"]["status"] == "processing"
+    assert retried.json()["material"]["error"] is None
+
+
+def test_students_cannot_retry(client, sam):
+    lecture = "d0000000-0006-4000-8000-000000000001"
+    assert client.post(f"/teacher/materials/{lecture}/retry", headers=sam).status_code == 403

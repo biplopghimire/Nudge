@@ -7,6 +7,7 @@ import io
 import math
 import re
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -111,8 +112,11 @@ class AIClient(ABC):
         """One 768-number vector per text."""
 
     @abstractmethod
-    def transcribe(self, data: bytes, mime_type: str) -> list[TranscribedPage]:
-        """Clean text for every page of a PDF, or for one photo. Math in LaTeX."""
+    def transcribe(
+        self, data: bytes, mime_type: str, on_progress: Callable[[int, int], None] | None = None
+    ) -> list[TranscribedPage]:
+        """Clean text for every page of a PDF, or for one photo. Math in LaTeX.
+        `on_progress(pages_done, total_pages)` is called as parts finish."""
 
     @abstractmethod
     def generate_reply(self, request: ReplyRequest) -> Reply: ...
@@ -136,7 +140,16 @@ class MockAIClient(AIClient):
         norm = math.sqrt(sum(v * v for v in vector))
         return [v / norm for v in vector]
 
-    def transcribe(self, data: bytes, mime_type: str) -> list[TranscribedPage]:
+    def transcribe(
+        self, data: bytes, mime_type: str, on_progress: Callable[[int, int], None] | None = None
+    ) -> list[TranscribedPage]:
+        pages = self._read(data, mime_type)
+        if on_progress:
+            on_progress(len(pages), len(pages))
+        return pages
+
+    @staticmethod
+    def _read(data: bytes, mime_type: str) -> list[TranscribedPage]:
         if mime_type == "application/pdf":
             try:
                 from pypdf import PdfReader

@@ -3,6 +3,7 @@
     python -m scripts.db reset    drop everything, create the tables from db/schema.sql
     python -m scripts.db seed     clear the tables and load the example data
     python -m scripts.db setup    reset + seed
+    python -m scripts.db migrate  add columns introduced since a database was created (keeps data)
 
 Uses NUDGE_DATABASE_URL from .env. Seed embeddings come from the AI set by
 NUDGE_AI (gemini gives real search results, mock gives placeholder vectors).
@@ -22,6 +23,21 @@ from app.repositories.postgres import PostgresRepository
 from app.repositories.seed import default_seed
 
 SCHEMA = Path(__file__).resolve().parent.parent / "db" / "schema.sql"
+
+# Additive changes to tables that already exist. Each is safe to run more than once.
+MIGRATIONS = [
+    "alter table materials add column if not exists error text",
+    "alter table materials add column if not exists progress integer not null default 0",
+    "alter table materials add column if not exists stage text",
+    "alter table materials add column if not exists processing_started_at timestamptz",
+]
+
+
+def migrate(database_url: str) -> None:
+    with psycopg.connect(database_url, autocommit=True) as conn:
+        for statement in MIGRATIONS:
+            conn.execute(statement)
+    print(f"Applied {len(MIGRATIONS)} migrations")
 
 
 def reset(database_url: str) -> None:
@@ -57,11 +73,13 @@ def main() -> None:
     url = get_settings().database_url
     if not url:
         sys.exit("Set NUDGE_DATABASE_URL in .env first.")
+    if command == "migrate":
+        migrate(url)
     if command in ("reset", "setup"):
         reset(url)
     if command in ("seed", "setup"):
         seed(url)
-    if command not in ("reset", "seed", "setup"):
+    if command not in ("reset", "seed", "setup", "migrate"):
         sys.exit(__doc__)
 
 

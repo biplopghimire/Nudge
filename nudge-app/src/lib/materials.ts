@@ -1,6 +1,8 @@
 import type { MaterialKind, UploadFile } from "@api";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 
+import type { AttachChoice, AttachOption } from "@/components/chat/attach-sheet";
 import type { IconName } from "@/components/ui/icon";
 
 export type PickedFile = UploadFile & { size: number; kind: MaterialKind; restricted: boolean };
@@ -35,15 +37,42 @@ export const KIND_ICON: Record<MaterialKind, IconName> = {
   other: "file",
 };
 
-export async function pickMaterials(): Promise<PickedFile[]> {
-  const result = await DocumentPicker.getDocumentAsync({
-    type: ["application/pdf", "image/*"],
-    multiple: true,
-    copyToCacheDirectory: true,
-  });
+/** The "Add files" menu for course materials. */
+export const MATERIAL_SOURCES: AttachOption[] = [
+  { choice: "library", icon: "photo", title: "Photo library", detail: "Handouts, whiteboards, worked examples" },
+  { choice: "camera", icon: "camera", title: "Camera", detail: "Snap a page or the board" },
+  { choice: "files", icon: "file", title: "Files", detail: "PDFs and images" },
+];
+
+/** Course files from the Files app, the photo library or the camera (whiteboards, handouts). */
+export async function pickMaterials(source: AttachChoice = "files"): Promise<PickedFile[]> {
+  if (source === "files") {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: ["application/pdf", "image/*"],
+      multiple: true,
+      copyToCacheDirectory: true,
+    });
+    if (result.canceled) return [];
+    return result.assets.map((asset) => {
+      const type = asset.mimeType ?? "application/pdf";
+      return { uri: asset.uri, name: asset.name, type, size: asset.size ?? 0, ...guessKind(asset.name, type) };
+    });
+  }
+
+  if (source === "camera") {
+    const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+    if (!granted) return [];
+  }
+  const options: ImagePicker.ImagePickerOptions = { mediaTypes: ["images"], quality: 0.8 };
+  const result =
+    source === "camera"
+      ? await ImagePicker.launchCameraAsync(options)
+      : await ImagePicker.launchImageLibraryAsync({ ...options, allowsMultipleSelection: true, selectionLimit: 20 });
   if (result.canceled) return [];
-  return result.assets.map((asset) => {
-    const type = asset.mimeType ?? "application/pdf";
-    return { uri: asset.uri, name: asset.name, type, size: asset.size ?? 0, ...guessKind(asset.name, type) };
+  const stamp = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return result.assets.map((asset, index) => {
+    const type = asset.mimeType ?? "image/jpeg";
+    const name = asset.fileName ?? `Photo ${stamp}${result.assets.length > 1 ? ` (${index + 1})` : ""}.jpg`;
+    return { uri: asset.uri, name, type, size: asset.fileSize ?? 0, ...guessKind(name, type) };
   });
 }

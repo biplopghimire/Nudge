@@ -9,7 +9,7 @@ import copy
 import re
 import threading
 from dataclasses import replace
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.domain import (
     Assignment,
@@ -129,9 +129,12 @@ class InMemoryRepository(Repository):
             self.materials[material.id] = material
             return material
 
-    def set_material_status(self, material_id: str, status: MaterialStatus) -> None:
+    def set_material_status(self, material_id: str, status: MaterialStatus, error: str | None = None) -> None:
         with self._lock:
             self.materials[material_id].status = status
+            self.materials[material_id].error = error
+            if status == "ready":
+                self.materials[material_id].progress = 100
 
     # ---- assignments ----
 
@@ -156,6 +159,24 @@ class InMemoryRepository(Repository):
         with self._lock:
             for chunk in chunks:
                 self.chunks[chunk.id] = chunk
+
+    def start_processing(self, material_id: str) -> None:
+        with self._lock:
+            material = self.materials[material_id]
+            material.status = "processing"
+            material.error = None
+            material.progress = 0
+            material.stage = "Waiting to start"
+            material.processing_started_at = datetime.now(UTC)
+
+    def set_material_progress(self, material_id: str, progress: int, stage: str) -> None:
+        with self._lock:
+            self.materials[material_id].progress = progress
+            self.materials[material_id].stage = stage
+
+    def delete_chunks(self, material_id: str) -> None:
+        with self._lock:
+            self.chunks = {k: c for k, c in self.chunks.items() if c.material_id != material_id}
 
     def _course_chunks(self, course_id: str, include_restricted: bool) -> list[Chunk]:
         return [

@@ -22,6 +22,7 @@ import type {
   JoinCourseResponse,
   LoginResponse,
   MaterialKind,
+  RetryMaterialResponse,
   Role,
   SendMessageResponse,
   StudentNotifications,
@@ -144,6 +145,11 @@ export const api = {
 
   // ---- teachers ----
   teacherMe: () => request<GetTeacherMeResponse>("GET", "/teacher/me"),
+  teacherMaterialLink: (materialId: string, page?: number | null) =>
+    request<GetMaterialLinkResponse>(
+      "GET",
+      `/teacher/materials/${materialId}/link${page ? `?page=${page}` : ""}`,
+    ),
   updateTeacherNotifications: (notifications: Partial<TeacherNotifications>) =>
     request<UpdateTeacherMeResponse>("PATCH", "/teacher/me", { json: { notifications } }),
   teacherCourses: () => request<GetTeacherCoursesResponse>("GET", "/teacher/courses"),
@@ -154,6 +160,8 @@ export const api = {
     request<UpdateCourseSettingsResponse>("PATCH", `/teacher/courses/${courseId}/settings`, {
       json: changes,
     }),
+  retryMaterial: (materialId: string) =>
+    request<RetryMaterialResponse>("POST", `/teacher/materials/${materialId}/retry`),
   uploadMaterial: (courseId: string, upload: UploadFile, kind: MaterialKind, restricted = false) => {
     const form = new FormData();
     form.append("file", file(upload));

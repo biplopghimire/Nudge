@@ -98,7 +98,15 @@ class Repository(ABC):
     def create_material(self, material: Material) -> Material: ...
 
     @abstractmethod
-    def set_material_status(self, material_id: str, status: MaterialStatus) -> None: ...
+    def set_material_status(self, material_id: str, status: MaterialStatus, error: str | None = None) -> None:
+        """Also records (or clears) the reason a file failed."""
+
+    @abstractmethod
+    def start_processing(self, material_id: str) -> None:
+        """Status 'processing', progress 0, no error, start time now."""
+
+    @abstractmethod
+    def set_material_progress(self, material_id: str, progress: int, stage: str) -> None: ...
 
     # ---- assignments ----
 
@@ -119,6 +127,10 @@ class Repository(ABC):
 
     @abstractmethod
     def add_chunks(self, chunks: list[Chunk]) -> None: ...
+
+    @abstractmethod
+    def delete_chunks(self, material_id: str) -> None:
+        """Remove a material's chunks (before processing it again)."""
 
     @abstractmethod
     def search_chunks_by_embedding(

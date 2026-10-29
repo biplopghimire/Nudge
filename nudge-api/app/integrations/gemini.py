@@ -11,6 +11,7 @@ import json
 import logging
 import math
 import time
+from collections.abc import Callable
 from typing import Any
 
 import httpx
@@ -31,7 +32,8 @@ log = logging.getLogger(__name__)
 
 BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 RETRY_STATUSES = {429, 500, 502, 503, 504}
-EMBED_BATCH = 100       # Gemini's limit per batchEmbedContents call
+EMBED_BATCH = 50        # texts per batchEmbedContents call (each text counts toward the per-minute limit)
+EMBED_RATE_LIMIT_RETRIES = 6  # an upload waits out up to ~6 minutes of rate limiting
 PAGES_PER_PART = 8      # PDF pages sent per transcription call
 HISTORY_TURNS = 12      # earlier messages sent with each question
 
@@ -75,9 +77,28 @@ TASK_TYPES = {"document": "RETRIEVAL_DOCUMENT", "query": "RETRIEVAL_QUERY"}
 
 
 class GeminiError(AIUnavailable):
-    def __init__(self, message: str, retryable: bool = False):
+    def __init__(self, message: str, retryable: bool = False, status: int | None = None,
+                 retry_after: float | None = None):
         super().__init__(message)
         self.retryable = retryable
+        self.status = status
+        self.retry_after = retry_after  # seconds Gemini asked us to wait, if it said
+
+    @property
+    def rate_limited(self) -> bool:
+        return self.status == 429
+
+
+def _retry_delay(error_body: dict) -> float | None:
+    """Gemini puts 'retry in 47s' in a RetryInfo detail on 429s."""
+    for detail in error_body.get("details", []) or []:
+        delay = str(detail.get("retryDelay", ""))
+        if delay.endswith("s"):
+            try:
+                return float(delay[:-1])
+            except ValueError:
+                pass
+    return None
 
 
 def _normalize(vector: list[float]) -> list[float]:
@@ -97,6 +118,12 @@ def _text_of(response: dict) -> str:
     if not text:
         raise GeminiError(f"Gemini returned no text (finishReason: {candidate.get('finishReason', 'none')})")
     return text
+
+
+def page_count(data: bytes) -> int:
+    from pypdf import PdfReader
+
+    return len(PdfReader(io.BytesIO(data)).pages)
 
 
 def split_pdf(data: bytes, pages_per_part: int = PAGES_PER_PART) -> list[tuple[int, bytes]]:
@@ -152,11 +179,14 @@ class GeminiClient(AIClient):
         if response.status_code == 200:
             return response.json()
         try:
-            message = response.json().get("error", {}).get("message", "")
+            error_body = response.json().get("error", {})
         except ValueError:
-            message = response.text[:200]
+            error_body = {"message": response.text[:200]}
         raise GeminiError(
-            f"{model} {response.status_code}: {message}", retryable=response.status_code in RETRY_STATUSES
+            f"{model} {response.status_code}: {error_body.get('message', '')}",
+            retryable=response.status_code in RETRY_STATUSES,
+            status=response.status_code,
+            retry_after=_retry_delay(error_body),
         )
 
     def _call(self, models: list[str], method: str, body: dict, timeout: float) -> dict:
@@ -192,14 +222,38 @@ class GeminiClient(AIClient):
                     for text in batch
                 ]
             }
-            response = self._call([self.embedding_model], "batchEmbedContents", body, self.timeout)
+            if task == "document":
+                response = self._embed_patiently(body)
+            else:
+                response = self._call([self.embedding_model], "batchEmbedContents", body, self.timeout)
             vectors += [_normalize(e["values"]) for e in response["embeddings"]]
         return vectors
 
+    def _embed_patiently(self, body: dict) -> dict:
+        """Embedding a whole upload can pass the per-minute limit (100 texts a minute on the
+        free tier). Uploads are processed in the background, so wait out the limit and retry
+        instead of failing the file."""
+        for attempt in range(EMBED_RATE_LIMIT_RETRIES + 1):
+            try:
+                return self._post_once(self.embedding_model, "batchEmbedContents", body, self.timeout)
+            except GeminiError as error:
+                if not error.retryable or attempt == EMBED_RATE_LIMIT_RETRIES:
+                    raise
+                if error.rate_limited:
+                    wait = min(error.retry_after or 15.0 * (attempt + 1), 70.0)
+                else:
+                    wait = 2.0 * (attempt + 1)
+                log.warning("Gemini embeddings %s; waiting %.0fs (attempt %d)", error.status, wait, attempt + 1)
+                time.sleep(wait)
+        raise AssertionError("unreachable")
+
     # ---- transcription ----
 
-    def transcribe(self, data: bytes, mime_type: str) -> list[TranscribedPage]:
+    def transcribe(
+        self, data: bytes, mime_type: str, on_progress: Callable[[int, int], None] | None = None
+    ) -> list[TranscribedPage]:
         parts = split_pdf(data) if mime_type == "application/pdf" else [(1, data)]
+        total_pages = page_count(data) if mime_type == "application/pdf" else 1
         pages: list[TranscribedPage] = []
         for first_page, part in parts:
             body = {
@@ -224,6 +278,8 @@ class GeminiClient(AIClient):
                         heading=(page.get("heading") or None),
                     )
                 )
+            if on_progress:
+                on_progress(min(first_page - 1 + PAGES_PER_PART, total_pages), total_pages)
         return pages
 
     # ---- replies ----
