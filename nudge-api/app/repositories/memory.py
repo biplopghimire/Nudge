@@ -9,7 +9,7 @@ import copy
 import re
 import threading
 from dataclasses import replace
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.domain import (
     Assignment,
@@ -33,6 +33,7 @@ class InMemoryRepository(Repository):
         seed = copy.deepcopy(seed) if seed else default_seed()
         self._lock = threading.RLock()
         self.users = {u.id: u for u in seed.users}
+        self.password_hashes: dict[str, str | None] = {}
         self.courses = {c.id: c for c in seed.courses}
         self.enrollments: list[tuple[str, str]] = list(seed.enrollments)
         self.materials = {m.id: m for m in seed.materials}
@@ -51,6 +52,17 @@ class InMemoryRepository(Repository):
     def get_user_by_email(self, email: str) -> User | None:
         email = email.strip().lower()
         return next((u for u in self.users.values() if u.email.lower() == email), None)
+
+    def create_user(self, user: User, password_hash: str | None) -> User:
+        with self._lock:
+            if self.get_user_by_email(user.email):
+                raise ValueError(f"Email already in use: {user.email}")
+            self.users[user.id] = user
+            self.password_hashes[user.id] = password_hash
+            return user
+
+    def get_password_hash(self, user_id: str) -> str | None:
+        return self.password_hashes.get(user_id)
 
     def update_user_notifications(self, user_id: str, changes: dict[str, bool]) -> dict[str, bool]:
         with self._lock:
@@ -117,9 +129,12 @@ class InMemoryRepository(Repository):
             self.materials[material.id] = material
             return material
 
-    def set_material_status(self, material_id: str, status: MaterialStatus) -> None:
+    def set_material_status(self, material_id: str, status: MaterialStatus, error: str | None = None) -> None:
         with self._lock:
             self.materials[material_id].status = status
+            self.materials[material_id].error = error
+            if status == "ready":
+                self.materials[material_id].progress = 100
 
     # ---- assignments ----
 
@@ -144,6 +159,24 @@ class InMemoryRepository(Repository):
         with self._lock:
             for chunk in chunks:
                 self.chunks[chunk.id] = chunk
+
+    def start_processing(self, material_id: str) -> None:
+        with self._lock:
+            material = self.materials[material_id]
+            material.status = "processing"
+            material.error = None
+            material.progress = 0
+            material.stage = "Waiting to start"
+            material.processing_started_at = datetime.now(UTC)
+
+    def set_material_progress(self, material_id: str, progress: int, stage: str) -> None:
+        with self._lock:
+            self.materials[material_id].progress = progress
+            self.materials[material_id].stage = stage
+
+    def delete_chunks(self, material_id: str) -> None:
+        with self._lock:
+            self.chunks = {k: c for k, c in self.chunks.items() if c.material_id != material_id}
 
     def _course_chunks(self, course_id: str, include_restricted: bool) -> list[Chunk]:
         return [

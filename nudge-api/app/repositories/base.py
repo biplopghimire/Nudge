@@ -39,6 +39,13 @@ class Repository(ABC):
     def get_user_by_email(self, email: str) -> User | None: ...
 
     @abstractmethod
+    def create_user(self, user: User, password_hash: str | None) -> User:
+        """Emails are unique, compared case-insensitively."""
+
+    @abstractmethod
+    def get_password_hash(self, user_id: str) -> str | None: ...
+
+    @abstractmethod
     def update_user_notifications(self, user_id: str, changes: dict[str, bool]) -> dict[str, bool]:
         """Merge `changes` into users.notifications and return the full result."""
 
@@ -91,7 +98,15 @@ class Repository(ABC):
     def create_material(self, material: Material) -> Material: ...
 
     @abstractmethod
-    def set_material_status(self, material_id: str, status: MaterialStatus) -> None: ...
+    def set_material_status(self, material_id: str, status: MaterialStatus, error: str | None = None) -> None:
+        """Also records (or clears) the reason a file failed."""
+
+    @abstractmethod
+    def start_processing(self, material_id: str) -> None:
+        """Status 'processing', progress 0, no error, start time now."""
+
+    @abstractmethod
+    def set_material_progress(self, material_id: str, progress: int, stage: str) -> None: ...
 
     # ---- assignments ----
 
@@ -112,6 +127,10 @@ class Repository(ABC):
 
     @abstractmethod
     def add_chunks(self, chunks: list[Chunk]) -> None: ...
+
+    @abstractmethod
+    def delete_chunks(self, material_id: str) -> None:
+        """Remove a material's chunks (before processing it again)."""
 
     @abstractmethod
     def search_chunks_by_embedding(

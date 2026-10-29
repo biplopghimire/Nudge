@@ -62,6 +62,10 @@ class MaterialOut(CamelModel):
     size_bytes: int
     restricted: bool
     status: Literal["processing", "ready", "failed"]
+    progress: int = 0  # 0-100 while processing
+    stage: str | None = None  # "Reading page 16 of 40"
+    eta_seconds: int | None = None  # rough time left while processing
+    error: str | None = None  # why it failed, when status is "failed"
 
 
 class ChatThreadOut(CamelModel):

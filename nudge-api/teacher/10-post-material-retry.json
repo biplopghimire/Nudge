@@ -1,0 +1,35 @@
+{
+  "method": "POST",
+  "path": "/teacher/materials/{materialId}/retry",
+  "description": "Read a file that failed again, without uploading it again. It goes back to 'processing'. Errors: 404 if the file isn't in one of the teacher's courses; 409 already_processing if it's still being read.",
+  "usedOn": [
+    "Teacher · Course (Retry on a failed file)"
+  ],
+  "types": {
+    "request": null,
+    "response": "RetryMaterialResponse"
+  },
+  "request": {
+    "params": {
+      "materialId": "d0000000-0006-4000-8000-000000000001"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "material": {
+        "id": "d0000000-0006-4000-8000-000000000001",
+        "courseId": "c0000000-0272-4000-8000-000000000001",
+        "title": "Lecture 6 - Substitution.pdf",
+        "kind": "slides",
+        "sizeBytes": 2516582,
+        "restricted": false,
+        "status": "processing",
+        "progress": 0,
+        "stage": "Waiting to start",
+        "etaSeconds": null,
+        "error": null
+      }
+    }
+  }
+}

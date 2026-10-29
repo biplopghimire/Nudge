@@ -53,9 +53,98 @@ A chat attachment (a photo or a PDF) is one-off context for that question only. 
 - "View as student" test mode for teachers
 - Offline access to saved files and chats
 
+## Running Nudge
+
+You need what Lab 0 set up (Node, Watchman, Xcode with an iOS simulator) and the **Expo Go** app on your phone.
+Then pick the backend the app talks to:
+
+| | Live backend | Local backend |
+|---|---|---|
+| API | Cloud Run (`https://nudge-api-214919077406.us-east1.run.app`) | `uvicorn` on your laptop |
+| Database | Supabase (shared by everyone) | Postgres.app on your laptop, or in-memory mocks |
+| Files | Cloud Storage bucket `nudge-course-files` | `nudge-api/.storage`, or mocks |
+| Setup | None, just run the app | Python, and optionally Postgres and a Gemini key |
+| Use it for | Trying the app, demos, testing on phones | Changing backend code |
+
+Data on the live backend is real and shared: accounts, courses and uploads made there stay there for everyone.
+
+### Option A: the app with the live backend (Cloud Run + Supabase)
+
+```bash
+git clone https://github.com/biplopghimire/Nudge.git
+cd Nudge/nudge-app
+npm install
+npx expo start
+```
+
+Press `i` for the iOS simulator, or scan the QR code with your phone (see [On your phone](#on-your-phone)). With no
+`nudge-app/.env.local` the app uses the live backend. If you have one from Option B, delete it or set it to
+`EXPO_PUBLIC_API_URL=https://nudge-api-214919077406.us-east1.run.app`, then restart `npx expo start`.
+
+Sign up in the app with **Create account**. To try both roles, sign up a teacher, create a course, and join it from a
+student account with the 6-letter code.
+
+### Option B: everything on your laptop
+
+**1. Start the backend** (in one terminal):
+
+```bash
+cd nudge-api
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+uvicorn app.main:app --reload --host 0.0.0.0
+```
+
+This runs on mocks: in-memory data that resets on restart, canned AI replies, and the example accounts in
+[`nudge-api/README.md`](nudge-api/README.md#example-accounts) (any password works). For the real engine (local
+Postgres, Gemini and real logins), follow "To run the real engine locally" in that README.
+`--host 0.0.0.0` lets phones on your Wi-Fi reach it.
+
+**2. Point the app at it** with `nudge-app/.env.local` (git ignores it):
+
+```
+EXPO_PUBLIC_API_URL=http://localhost:8000
+```
+
+On a phone, `localhost` is the phone itself, so use your Mac's Wi-Fi address instead. Find it with
+`ipconfig getifaddr en0`, for example `EXPO_PUBLIC_API_URL=http://192.168.1.152:8000`. That address works in the
+simulator too.
+
+**3. Start the app** (in a second terminal):
+
+```bash
+cd nudge-app
+npm install
+npx expo start --clear
+```
+
+Restart `npx expo start` whenever you change `.env.local`. The app only reads it at start.
+
+### On your phone
+
+1. Install **Expo Go** from the App Store (or Google Play).
+2. Put your phone on the **same Wi-Fi** as your laptop.
+3. Run `npx expo start` in `nudge-app/` and scan the QR code: with the Camera app on iPhone, or from inside Expo Go on
+   Android.
+4. The first time, allow Expo Go to find devices on your local network when iOS asks. If you tapped "Don't Allow",
+   turn it back on in Settings › Expo Go › Local Network.
+
+If the QR code won't connect, the Wi-Fi is probably blocking device-to-device traffic (CMU-SECURE and eduroam often
+do). Use a tunnel instead:
+
+```bash
+npx expo start --tunnel
+```
+
+A tunnel only fixes loading the app. A phone can't reach a laptop backend (Option B) on those networks, so use the
+live backend (Option A) there, or a phone hotspot.
+
+Shake the phone (or press `Cmd+D` in the simulator) for the developer menu, where you can reload the app.
+
 ## API overview
 
-The backend is a FastAPI app in [`nudge-api/`](nudge-api/). Every endpoint works today against mock data (no database or API keys needed):
+The backend is a FastAPI app in [`nudge-api/`](nudge-api/), live at **https://nudge-api-214919077406.us-east1.run.app** ([docs](https://nudge-api-214919077406.us-east1.run.app/docs)). To run it locally on mock data (no database or API keys needed):
 
 ```bash
 cd nudge-api && python3 -m venv .venv && source .venv/bin/activate
@@ -74,6 +163,7 @@ Every request except login sends `Authorization: Bearer {token}`. After login, s
 | Method | Path | Description |
 |---|---|---|
 | POST | `/auth/login` | Sign in as a student or teacher |
+| POST | `/auth/signup` | Create a student or teacher account and sign in |
 | GET | `/threads` | Your past chats, newest first (`?q=` to search by title) |
 | POST | `/threads` | Start a chat in a course, optionally tied to an assignment |
 | GET | `/threads/{threadId}` | One chat and all its messages, with citations |
