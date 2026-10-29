@@ -12,16 +12,18 @@ npm install
 npx expo start
 ```
 
-Press `i` for the iOS simulator or `a` for Android, or scan the QR code with Expo Go on your phone.
+Press `i` for the iOS simulator or `a` for Android, or scan the QR code with Expo Go on your phone (same Wi-Fi).
 
-By default the app talks to the live backend on Cloud Run. To use a backend running on your laptop
-(`uvicorn app.main:app --host 0.0.0.0` in `nudge-api/`), create `nudge-app/.env.local`:
+By default the app talks to the live backend: Cloud Run with Supabase and Cloud Storage. To use a backend running on
+your laptop (`uvicorn app.main:app --reload --host 0.0.0.0` in `nudge-api/`), create `nudge-app/.env.local`:
 
 ```
-EXPO_PUBLIC_API_URL=http://localhost:8000
+EXPO_PUBLIC_API_URL=http://192.168.x.x:8000
 ```
 
-(On a physical phone use your computer's LAN IP instead of `localhost`.) Restart `npx expo start` after changing it.
+Use your Mac's Wi-Fi address (`ipconfig getifaddr en0`); `localhost` only works in the simulator. Restart
+`npx expo start` after changing it. The main [README](../README.md#running-nudge) walks through both setups and
+running on a phone, including `--tunnel` for networks that block it.
 
 Checks: `npm run typecheck` and `npm run lint`.
 
