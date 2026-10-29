@@ -45,6 +45,10 @@ create table materials (
   storage_path text not null,             -- path in Google Cloud Storage
   restricted  boolean not null default false,   -- solution keys and rubrics
   status      text not null default 'processing' check (status in ('processing', 'ready', 'failed')),
+  error       text,                       -- added: why processing failed, shown to the teacher
+  progress    integer not null default 0, -- added: 0-100 while processing
+  stage       text,                       -- added: 'Reading pages 9-16 of 40'
+  processing_started_at timestamptz,      -- added: for the time-left estimate
   uploaded_at timestamptz not null default now()
 );
 

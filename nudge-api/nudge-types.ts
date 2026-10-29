@@ -91,6 +91,10 @@ export interface Material {
   sizeBytes: number;
   restricted: boolean; // solution keys and rubrics; never sent to students
   status: MaterialStatus;
+  progress: number; // 0-100 while processing, 100 when ready
+  stage: string | null; // while processing, e.g. "Reading page 16 of 40"
+  etaSeconds: number | null; // rough time left while processing
+  error: string | null; // why it failed, when status is "failed"
 }
 
 export interface MaterialLink {
@@ -363,6 +367,11 @@ export interface UploadMaterialRequest {
 }
 export interface UploadMaterialResponse {
   material: Material; // starts as "processing"
+}
+
+// POST /teacher/materials/{materialId}/retry (read a failed file again)
+export interface RetryMaterialResponse {
+  material: Material; // back to "processing"
 }
 
 // GET /teacher/courses/{courseId}/dashboard

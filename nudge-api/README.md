@@ -174,5 +174,7 @@ Every request except login and sign-up sends `Authorization: Bearer {token}`. Af
 | GET | `/teacher/courses/{courseId}` | Get one course with its join code, Nudge settings and all materials, including restricted ones. | [05](teacher/05-get-course.json) |
 | PATCH | `/teacher/courses/{courseId}/settings` | Change how Nudge helps in this course, and turn deadline reminders on for every student. | [06](teacher/06-patch-course-settings.json) |
 | POST | `/teacher/courses/{courseId}/materials` | Upload a PDF or photo (multipart/form-data). | [07](teacher/07-post-course-materials.json) |
+| POST | `/teacher/materials/{materialId}/retry` | Read a file that failed again, without uploading it again. | [10](teacher/10-post-material-retry.json) |
+| GET | `/teacher/materials/{materialId}/link` | Get a temporary link (15 minutes) to open one of your course files (test chat citations). | [11](teacher/11-get-material-link.json) |
 | GET | `/teacher/courses/{courseId}/dashboard` | Question count, active students, flagged count, trending topics and flagged answers waiting for review (student questions only). | [08](teacher/08-get-course-dashboard.json) |
 | POST | `/teacher/courses/{courseId}/canvas/import` | *Planned for v2, details TBD.* Import the syllabus, files and deadlines from Canvas. Returns 501 for now. | [09](teacher/09-post-canvas-import.json) |

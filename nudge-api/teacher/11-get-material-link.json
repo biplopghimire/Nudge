@@ -1,0 +1,28 @@
+{
+  "method": "GET",
+  "path": "/teacher/materials/{materialId}/link",
+  "description": "Get a temporary link (15 minutes) to open one of your course files, hidden ones included. Used when a teacher taps a citation in their test chat. Files from other teachers' courses return 404.",
+  "usedOn": [
+    "Teacher · Test chat (citation chips)"
+  ],
+  "types": {
+    "request": null,
+    "response": "GetMaterialLinkResponse"
+  },
+  "request": {
+    "params": {
+      "materialId": "d0000000-0006-4000-8000-000000000001"
+    },
+    "query": {
+      "page": 4
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "url": "https://storage.googleapis.com/nudge-course-files/courses/c0000000-0272-4000-8000-000000000001/materials/d0000000-0006-4000-8000-000000000001/Lecture%206%20-%20Substitution.pdf?X-Goog-Expires=900&X-Goog-Signature=...",
+      "page": 4,
+      "expiresAt": "2026-10-04T21:28:00Z"
+    }
+  }
+}

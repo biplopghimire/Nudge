@@ -37,7 +37,10 @@ SETTINGS_COLUMNS = ("hints_only", "use_solution_keys", "cite_materials", "deadli
 COURSE_COLUMNS = (
     "id, code, section, semester, teacher_id, join_code, office_hours, " + ", ".join(SETTINGS_COLUMNS)
 )
-MATERIAL_COLUMNS = "id, course_id, title, kind, size_bytes, storage_path, restricted, status, uploaded_at"
+MATERIAL_COLUMNS = (
+    "id, course_id, title, kind, size_bytes, storage_path, restricted, status, uploaded_at, error, "
+    "progress, stage, processing_started_at"
+)
 CHUNK_COLUMNS = "id, course_id, material_id, content, page, heading, restricted"
 THREAD_COLUMNS = "id, user_id, course_id, title, updated_at, assignment_id, owner_role"
 MESSAGE_COLUMNS = (
@@ -237,8 +240,25 @@ class PostgresRepository(Repository):
         )
         return Material(**row)
 
-    def set_material_status(self, material_id: str, status: MaterialStatus) -> None:
-        self._execute("update materials set status = %(s)s where id = %(id)s", {"s": status, "id": material_id})
+    def set_material_status(self, material_id: str, status: MaterialStatus, error: str | None = None) -> None:
+        self._execute(
+            "update materials set status = %(s)s, error = %(e)s, "
+            "progress = case when %(s)s = 'ready' then 100 else progress end where id = %(id)s",
+            {"s": status, "e": error, "id": material_id},
+        )
+
+    def start_processing(self, material_id: str) -> None:
+        self._execute(
+            "update materials set status = 'processing', error = null, progress = 0, "
+            "stage = 'Waiting to start', processing_started_at = now() where id = %(id)s",
+            {"id": material_id},
+        )
+
+    def set_material_progress(self, material_id: str, progress: int, stage: str) -> None:
+        self._execute(
+            "update materials set progress = %(p)s, stage = %(st)s where id = %(id)s",
+            {"p": progress, "st": stage, "id": material_id},
+        )
 
     # ---- assignments ----
 
@@ -286,6 +306,9 @@ class PostgresRepository(Repository):
                 "%(restricted)s, %(embedding)s)",
                 [{**c.__dict__, "embedding": np.array(c.embedding, dtype=np.float32)} for c in chunks],
             )
+
+    def delete_chunks(self, material_id: str) -> None:
+        self._execute("delete from chunks where material_id = %(m)s", {"m": material_id})
 
     def search_chunks_by_embedding(
         self, course_id: str, embedding: list[float], limit: int, include_restricted: bool
