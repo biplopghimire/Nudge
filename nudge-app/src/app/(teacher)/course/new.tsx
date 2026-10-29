@@ -50,12 +50,27 @@ export default function NewCourse() {
     try {
       const { course } = await api.createCourse({ code: code.trim(), section: section.trim(), semester });
       setStep("uploading");
+      // The course exists now, so never go back to the form (that would create a duplicate).
+      const failed: string[] = [];
       for (const [index, file] of files.entries()) {
-        await api.uploadMaterial(course.id, { uri: file.uri, name: file.name, type: file.type }, file.kind, file.restricted);
+        try {
+          await api.uploadMaterial(course.id, { uri: file.uri, name: file.name, type: file.type }, file.kind, file.restricted);
+        } catch {
+          failed.push(file.name);
+        }
         setUploaded(index + 1);
       }
-      haptics.success();
       client.invalidateQueries({ queryKey: keys.teacherCourses });
+      if (failed.length) {
+        haptics.error();
+        toast.show({
+          variant: "warning",
+          label: `${failed.length} ${failed.length === 1 ? "file" : "files"} didn't upload`,
+          description: "Your course is ready. Add them again from the course page.",
+        });
+      } else {
+        haptics.success();
+      }
       router.replace({ pathname: "/course/[id]/share", params: { id: course.id, code: course.joinCode ?? "", name: `${course.code} · ${course.section}` } });
     } catch (error) {
       haptics.error();

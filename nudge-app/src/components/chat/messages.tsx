@@ -35,10 +35,10 @@ export function SentMessage({ message, localUri, pending }: { message: Message; 
             <Text className="text-[15px] font-medium text-foreground">PDF attached</Text>
           </View>
         ) : (
-          <View>
+          <View className="overflow-hidden rounded-[22px] border border-border" style={{ borderCurve: "continuous" }}>
             <Image
               source={{ uri: imageUri }}
-              style={{ width: 210, height: 260, borderRadius: 20, opacity: pending ? 0.6 : 1 }}
+              style={{ width: 176, height: 220, opacity: pending ? 0.6 : 1 }}
               contentFit="cover"
               transition={250}
               accessibilityLabel="Photo of your work"

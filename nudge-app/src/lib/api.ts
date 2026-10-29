@@ -33,6 +33,8 @@ import type {
   UploadMaterialResponse,
 } from "@api";
 
+import { File as FsFile } from "expo-file-system";
+
 import { API_URL } from "./config";
 
 export class ApiError extends Error {
@@ -68,7 +70,8 @@ async function request<T>(method: string, path: string, body: Body = {}): Promis
       headers,
       body: body.form ?? (body.json !== undefined ? JSON.stringify(body.json) : undefined),
     });
-  } catch {
+  } catch (error) {
+    if (__DEV__) console.warn(`[api] ${method} ${path} failed before reaching the server:`, error);
     throw new ApiError(0, "offline", "Can't reach Nudge. Check your connection and try again.");
   }
 
@@ -84,7 +87,19 @@ async function request<T>(method: string, path: string, body: Body = {}): Promis
   return data as T;
 }
 
-const file = (f: UploadFile) => f as unknown as Blob; // React Native FormData file shape
+/**
+ * A file part for multipart uploads. Expo's fetch (the global fetch since SDK 55)
+ * doesn't accept React Native's `{ uri, name, type }` parts: it needs something
+ * that can give it bytes. Keep the original name and type, read the bytes from disk.
+ */
+const file = (f: UploadFile) => {
+  const onDisk = new FsFile(f.uri);
+  return {
+    name: f.name,
+    type: f.type,
+    bytes: async () => new Uint8Array(await onDisk.arrayBuffer()),
+  } as unknown as Blob;
+};
 
 export const api = {
   // ---- auth ----
