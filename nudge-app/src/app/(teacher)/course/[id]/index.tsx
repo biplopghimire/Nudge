@@ -15,14 +15,13 @@ import { haptics } from "@/lib/haptics";
 import { MATERIAL_SOURCES, pickMaterials } from "@/lib/materials";
 import { enterRow } from "@/lib/motion";
 import { keys, useTeacherCourse } from "@/lib/queries";
-import { useStartChat } from "@/lib/start-chat";
+import { startChat } from "@/lib/start-chat";
 
 export default function TeacherCourse() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, isLoading, refetch, isRefetching } = useTeacherCourse(id);
   const client = useQueryClient();
   const { toast } = useToast();
-  const startChat = useStartChat();
   const [uploading, setUploading] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -100,8 +99,7 @@ export default function TeacherCourse() {
         <QuickAction
           icon="sparkles"
           label="Ask Nudge"
-          busy={startChat.isPending}
-          onPress={() => course && startChat.mutate({ courseId: course.id, title: "Teacher chat" })}
+          onPress={() => course && startChat({ courseId: course.id, courseCode: course.code, title: "Teacher chat" })}
         />
       </View>
 
@@ -133,10 +131,10 @@ export default function TeacherCourse() {
   );
 }
 
-function QuickAction({ icon, label, onPress, busy }: { icon: "sliders" | "sparkles"; label: string; onPress: () => void; busy?: boolean }) {
+function QuickAction({ icon, label, onPress }: { icon: "sliders" | "sparkles"; label: string; onPress: () => void }) {
   return (
     <Tappable onPress={onPress} className="flex-1 flex-row items-center gap-3 rounded-2xl bg-surface-secondary px-4 py-3.5" accessibilityRole="button">
-      {busy ? <Spinner size="sm" /> : <Icon name={icon} size={16} color="accent" />}
+      <Icon name={icon} size={16} color="accent" />
       <Text className="text-[15px] font-semibold text-foreground">{label}</Text>
     </Tappable>
   );

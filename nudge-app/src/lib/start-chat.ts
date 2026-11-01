@@ -1,25 +1,11 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useToast } from "heroui-native";
 
-import { api, ApiError } from "./api";
-import { haptics } from "./haptics";
-import { keys } from "./queries";
+/** The `id` of a chat that isn't saved yet. It is created when its first message is sent. */
+export const NEW_CHAT_ID = "new";
 
-/** Start a chat in a course (optionally about an assignment) and open it. */
-export function useStartChat() {
-  const client = useQueryClient();
-  const { toast } = useToast();
-  return useMutation({
-    mutationFn: (input: { courseId: string; assignmentId?: string; title: string }) => api.createThread(input),
-    onSuccess: ({ thread }) => {
-      client.setQueryData(keys.thread(thread.id), { thread, messages: [] });
-      client.invalidateQueries({ queryKey: keys.threads });
-      router.push({ pathname: "/chat/[id]", params: { id: thread.id } });
-    },
-    onError: (error) => {
-      haptics.error();
-      toast.show({ variant: "danger", label: "Couldn't start a chat", description: error instanceof ApiError ? error.message : undefined });
-    },
-  });
+export type ChatDraft = { courseId: string; courseCode: string; assignmentId?: string; title: string };
+
+/** Open a new chat in a course (optionally about an assignment). Nothing is saved until the first message. */
+export function startChat(draft: ChatDraft) {
+  router.push({ pathname: "/chat/[id]", params: { id: NEW_CHAT_ID, ...draft } });
 }

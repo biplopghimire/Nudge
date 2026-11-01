@@ -25,6 +25,7 @@ import { useAuth } from "@/lib/auth";
 import { haptics } from "@/lib/haptics";
 import { pendingPhoto } from "@/lib/pending-photo";
 import { keys, useThread } from "@/lib/queries";
+import { NEW_CHAT_ID, type ChatDraft } from "@/lib/start-chat";
 
 type Item =
   | { kind: "message"; id: string; message: Message; localUri?: string; pending?: boolean }
@@ -43,12 +44,16 @@ const SUGGESTIONS = [
 ];
 
 export default function Chat() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id: routeId, ...draft } = useLocalSearchParams<{ id: string } & Partial<ChatDraft>>();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const client = useQueryClient();
   const { toast } = useToast();
-  const { data, isLoading } = useThread(id);
+  // A new chat has no id until its first message is sent, so backing out saves nothing.
+  const [threadId, setThreadId] = useState<string | null>(routeId === NEW_CHAT_ID ? null : routeId);
+  const [draftKey] = useState(() => `draft-${Date.now()}`);
+  const photoKey = threadId ?? draftKey;
+  const { data, isLoading } = useThread(threadId);
 
   const [text, setText] = useState("");
   const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
@@ -69,9 +74,9 @@ export default function Chat() {
   // Pick up a photo taken on the camera screen.
   useFocusEffect(
     useCallback(() => {
-      const photo = pendingPhoto.take(id);
+      const photo = pendingPhoto.take(photoKey);
       if (photo) setAttachment({ uri: photo.uri, name: "work.jpg", type: "image/jpeg", source: "camera" });
-    }, [id]),
+    }, [photoKey, setAttachment]),
   );
 
   const items = useMemo<Item[]>(() => {
@@ -83,11 +88,20 @@ export default function Chat() {
     return list;
   }, [data, sending]);
 
+  /** Save a new chat on its first message. */
+  async function createThread(): Promise<string> {
+    const { thread } = await api.createThread({ courseId: draft.courseId!, assignmentId: draft.assignmentId, title: draft.title ?? "New chat" });
+    client.setQueryData<GetThreadResponse>(keys.thread(thread.id), { thread, messages: [] });
+    setThreadId(thread.id);
+    router.setParams({ id: thread.id });
+    return thread.id;
+  }
+
   async function send(content = text) {
     const question = content.trim();
     if ((!question && !attachment) || sending || !user) return;
     const outgoing = attachment;
-    const optimistic = draftMessage(id, user.role, question);
+    const optimistic = draftMessage(threadId ?? draftKey, user.role, question);
     setText("");
     setAttachment(null);
     setAnchorIndex(items.length);
@@ -95,6 +109,7 @@ export default function Chat() {
     requestAnimationFrame(() => scrollMessageToEnd({ animated: true, closeKeyboard: false }));
 
     try {
+      const id = threadId ?? (await createThread());
       const response = await api.sendMessage(
         id,
         question,
@@ -121,7 +136,7 @@ export default function Chat() {
 
   async function choose(choice: AttachChoice) {
     if (choice === "camera") {
-      router.push({ pathname: "/camera", params: { threadId: id, title: data?.thread.title ?? "" } });
+      router.push({ pathname: "/camera", params: { threadId: photoKey, title: thread?.title ?? "" } });
       return;
     }
     if (choice === "library") {
@@ -135,7 +150,7 @@ export default function Chat() {
     if (asset) setAttachment({ uri: asset.uri, name: asset.name, type: asset.mimeType ?? "application/pdf", source: "files" });
   }
 
-  const thread = data?.thread;
+  const thread = data?.thread ?? (threadId ? undefined : { title: draft.title ?? "New chat", courseCode: draft.courseCode ?? "" });
   const empty = !isLoading && items.length === 0;
 
   return (
