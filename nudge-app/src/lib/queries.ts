@@ -29,8 +29,9 @@ export const useTeacherMe = () => useQuery({ queryKey: keys.teacherMe, queryFn: 
 
 export const useThreads = () => useQuery({ queryKey: keys.threads, queryFn: () => api.threads() });
 
-export const useThread = (id: string) =>
-  useQuery({ queryKey: keys.thread(id), queryFn: () => api.thread(id) });
+/** A chat and its messages. `null` for a new chat that isn't saved yet. */
+export const useThread = (id: string | null) =>
+  useQuery({ queryKey: keys.thread(id ?? ""), queryFn: () => api.thread(id!), enabled: !!id });
 
 /** A teacher's course. Polls every 2s while any upload is still processing. */
 export const useTeacherCourse = (id: string) =>

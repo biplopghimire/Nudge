@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { Button, Skeleton, Spinner } from "heroui-native";
+import { Button, Skeleton } from "heroui-native";
 import { RefreshControl, Text, View } from "react-native";
 import Animated from "react-native-reanimated";
 
@@ -12,12 +12,11 @@ import { useAuth } from "@/lib/auth";
 import { dueLabel, greetingDate, initials } from "@/lib/format";
 import { enterRow } from "@/lib/motion";
 import { useStudentCourses } from "@/lib/queries";
-import { useStartChat } from "@/lib/start-chat";
+import { startChat } from "@/lib/start-chat";
 
 export default function Home() {
   const { user } = useAuth();
   const { data, isLoading, refetch, isRefetching } = useStudentCourses();
-  const startChat = useStartChat();
   const upNext = data?.upNext;
 
   return (
@@ -51,12 +50,11 @@ export default function Home() {
             <Button
               size="sm"
               className="rounded-full px-5"
-              isDisabled={startChat.isPending}
               onPress={() =>
-                startChat.mutate({ courseId: upNext.courseId, assignmentId: upNext.id, title: upNext.shortTitle })
+                startChat({ courseId: upNext.courseId, courseCode: upNext.courseCode, assignmentId: upNext.id, title: upNext.shortTitle })
               }
             >
-              {startChat.isPending ? <Spinner size="sm" color="accent-foreground" /> : <Button.Label>Start</Button.Label>}
+              <Button.Label>Start</Button.Label>
             </Button>
           </View>
         </Animated.View>
@@ -77,7 +75,7 @@ export default function Home() {
               title={course.code}
               subtitle={`${course.section} · ${course.teacherName}`}
               trailing={course.nextDue ? <Badge>{course.nextDue}</Badge> : undefined}
-              onPress={() => startChat.mutate({ courseId: course.id, title: "New chat" })}
+              onPress={() => startChat({ courseId: course.id, courseCode: course.code, title: "New chat" })}
             />
           ))}
           <Tappable onPress={() => router.push("/join")} className="flex-row items-center gap-2 py-4" accessibilityRole="button">
