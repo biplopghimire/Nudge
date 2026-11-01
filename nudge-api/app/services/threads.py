@@ -23,6 +23,9 @@ ATTACHMENT_EXTENSIONS = {
     "application/pdf": "pdf",
 }
 MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
+NEW_CHAT_TITLE = "New chat"
+# Chats still called one of these are named by the AI after their first message.
+DEFAULT_TITLES = {NEW_CHAT_TITLE, "Teacher chat"}
 
 
 class ThreadService:
@@ -76,7 +79,7 @@ class ThreadService:
             if not assignment or assignment.course_id != course_id:
                 raise not_found("Assignment")
         if not title or not title.strip():
-            title = assignment.title if assignment else "New chat"
+            title = assignment.title if assignment else NEW_CHAT_TITLE
         thread = self.repo.create_thread(
             Thread(
                 id=new_id(),
@@ -154,5 +157,9 @@ class ThreadService:
                 citations=answer.citations,
             )
         )
+        if not history and thread.title in DEFAULT_TITLES:
+            title = self.chat.title_for(content, attachment, attachment_mime)
+            if title:
+                self.repo.rename_thread(thread.id, title)
         self.repo.touch_thread(thread.id, reply.created_at)
         return SendMessageResponse(sent_message=self.views.message(sent), reply=self.views.message(reply))

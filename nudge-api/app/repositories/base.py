@@ -160,6 +160,9 @@ class Repository(ABC):
     def touch_thread(self, thread_id: str, updated_at: datetime) -> None: ...
 
     @abstractmethod
+    def rename_thread(self, thread_id: str, title: str) -> None: ...
+
+    @abstractmethod
     def get_message(self, message_id: str) -> Message | None: ...
 
     @abstractmethod

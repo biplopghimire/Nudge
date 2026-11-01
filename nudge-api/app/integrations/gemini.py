@@ -19,6 +19,7 @@ import httpx
 from app.integrations.ai import (
     EMBEDDING_SIZE,
     HISTORY_TURNS,
+    TITLE_RULES,
     AIClient,
     AIUnavailable,
     EmbedTask,
@@ -36,6 +37,7 @@ RETRY_STATUSES = {429, 500, 502, 503, 504}
 EMBED_BATCH = 50        # texts per batchEmbedContents call (each text counts toward the per-minute limit)
 EMBED_RATE_LIMIT_RETRIES = 6  # an upload waits out up to ~6 minutes of rate limiting
 PAGES_PER_PART = 8      # PDF pages sent per transcription call
+TITLE_TIMEOUT = 10.0    # a title isn't worth keeping the student waiting
 
 TRANSCRIBE_PROMPT = """\
 Transcribe every page of this course document into clean text for a search index.
@@ -320,3 +322,24 @@ class GeminiClient(AIClient):
         numbers = {s.number for s in request.sources if not s.restricted}
         used = [n for n in result.get("sources", []) if n in numbers]
         return Reply(result.get("reply", "").strip() or raw, used)
+
+    # ---- chat titles ----
+
+    def generate_title(self, question: str, attachment: bytes | None = None, attachment_mime: str | None = None) -> str:
+        """One quick try per model, no second pass: the caller falls back to the question."""
+        parts: list[dict] = [{"text": question.strip() or "(No text, only the attachment.)"}]
+        if attachment and attachment_mime:
+            parts.append(_inline(attachment, attachment_mime))
+        body = {
+            "systemInstruction": {"parts": [{"text": TITLE_RULES}]},
+            "contents": [{"role": "user", "parts": parts}],
+            "generationConfig": {"temperature": 0.2},
+        }
+        for model in self.chat_models:
+            try:
+                return _text_of(self._post_once(model, "generateContent", body, TITLE_TIMEOUT))
+            except GeminiError as error:
+                log.warning("Gemini title %s", error)
+                if not error.retryable:
+                    break
+        raise GeminiError("Gemini couldn't name the chat", retryable=True)

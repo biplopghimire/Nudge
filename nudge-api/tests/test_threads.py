@@ -54,6 +54,27 @@ def test_chat_flow(client, sam):
     assert newest["id"] == created["id"]
 
 
+def test_new_chat_is_named_after_its_first_message(client, sam):
+    created = client.post("/threads", headers=sam, json={"courseId": C272, "title": "New chat"}).json()["thread"]
+    send(client, sam, created["id"], "How do I choose u for integration by parts?")
+    assert client.get(f"/threads/{created['id']}", headers=sam).json()["thread"]["title"] == "How do I choose u for"
+
+    send(client, sam, created["id"], "And what about dv?")
+    assert client.get(f"/threads/{created['id']}", headers=sam).json()["thread"]["title"] == "How do I choose u for"
+
+
+def test_named_chats_keep_their_title(client, sam):
+    created = client.post("/threads", headers=sam, json={"courseId": C272, "assignmentId": PS4}).json()["thread"]
+    send(client, sam, created["id"], "Where do I start?")
+    assert client.get(f"/threads/{created['id']}", headers=sam).json()["thread"]["title"] == "Problem Set 4"
+
+
+def test_photo_only_first_message_is_named_from_the_photo(client, sam):
+    created = client.post("/threads", headers=sam, json={"courseId": C272, "title": "New chat"}).json()["thread"]
+    send(client, sam, created["id"], attachment=("work.jpg", b"\xff\xd8\xff", "image/jpeg"), source="camera")
+    assert client.get(f"/threads/{created['id']}", headers=sam).json()["thread"]["title"] == "Photo of my work"
+
+
 def test_empty_message_is_rejected(client, sam):
     assert send(client, sam, PROBLEM_3, " ").status_code == 400
 
@@ -112,6 +133,13 @@ def test_teacher_chats_in_a_course_they_teach(client, prof_h):
     assert created.json()["thread"]["ownerRole"] == "teacher"
     sent = send(client, prof_h, created.json()["thread"]["id"], "How should I grade substitution?")
     assert sent.json()["sentMessage"]["role"] == "teacher"
+
+
+def test_teacher_chat_is_named_after_its_first_message(client, prof_h):
+    created = client.post("/threads", headers=prof_h, json={"courseId": C272, "title": "Teacher chat"}).json()["thread"]
+    send(client, prof_h, created["id"], "Rubric for substitution")
+    thread = client.get(f"/threads/{created['id']}", headers=prof_h).json()["thread"]
+    assert thread["title"] == "Rubric for substitution"
 
 
 def test_teacher_cannot_chat_in_another_teachers_course(client, prof_h):

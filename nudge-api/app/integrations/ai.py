@@ -47,6 +47,12 @@ OUTPUT_RULE = """\
 Return JSON: {"reply": the message to show, "sources": the numbers of the SOURCES you relied on}.
 Do not write source numbers or file names in brackets inside the reply; the app shows them as chips.
 """
+TITLE_RULES = """\
+Name a study chat from the first message sent in it, which may be or include a photo or PDF of the student's work.
+Reply with the title only: 2 to 6 words naming the topic, like "Integration by parts" or "PS 4 problem 3".
+No quotes and no ending punctuation.
+"""
+TITLE_WORDS = 6  # the mock's titles, and the fallback when the AI can't name a chat
 
 
 class AIUnavailable(RuntimeError):
@@ -136,6 +142,10 @@ class AIClient(ABC):
     @abstractmethod
     def generate_reply(self, request: ReplyRequest) -> Reply: ...
 
+    @abstractmethod
+    def generate_title(self, question: str, attachment: bytes | None = None, attachment_mime: str | None = None) -> str:
+        """A short title for a new chat, from its first message and any photo or PDF sent with it."""
+
 
 class MockAIClient(AIClient):
     """No network. Vectors come from hashed words, so texts sharing words are close;
@@ -195,3 +205,8 @@ class MockAIClient(AIClient):
             return Reply(f"{opener} Look at {where}. What is the first step it shows for a problem like this?",
                          [top.number])
         return Reply(f"{opener} {where} covers this: {top.content[:200]}", [top.number])
+
+    def generate_title(self, question: str, attachment: bytes | None = None, attachment_mime: str | None = None) -> str:
+        if question.strip():
+            return " ".join(question.split()[:TITLE_WORDS])
+        return "PDF of my work" if attachment_mime == "application/pdf" else "Photo of my work"

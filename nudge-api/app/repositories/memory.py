@@ -226,6 +226,10 @@ class InMemoryRepository(Repository):
         with self._lock:
             self.threads[thread_id].updated_at = updated_at
 
+    def rename_thread(self, thread_id: str, title: str) -> None:
+        with self._lock:
+            self.threads[thread_id].title = title
+
     def get_message(self, message_id: str) -> Message | None:
         return self.messages.get(message_id)
 
