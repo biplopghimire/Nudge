@@ -52,6 +52,10 @@ gcloud run deploy "$SERVICE" \
   --set-env-vars "NUDGE_REPOSITORY=postgres,NUDGE_AI=gemini,NUDGE_STORAGE=gcs,NUDGE_AUTH=jwt" \
   --set-secrets "NUDGE_DATABASE_URL=nudge-database-url:latest,NUDGE_GEMINI_API_KEY=nudge-gemini-api-key:latest,NUDGE_JWT_SECRET=nudge-jwt-secret:latest"
 
+# A preview deploy (--no-traffic --tag name) pins traffic to the old revision;
+# send it all to the one just deployed.
+gcloud run services update-traffic "$SERVICE" --project "$PROJECT" --region "$REGION" --to-latest --quiet >/dev/null
+
 URL="$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" --format 'value(status.url)')"
 echo
 echo "Deployed: $URL"
