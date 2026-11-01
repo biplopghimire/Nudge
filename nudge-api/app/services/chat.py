@@ -12,7 +12,7 @@ from dataclasses import dataclass, replace
 
 from app.domain import Chunk, Citation, Course, Message, Thread
 from app.errors import ApiError
-from app.integrations.ai import HISTORY_TURNS, AIClient, AIUnavailable, ReplyRequest, Source, Turn
+from app.integrations.ai import HISTORY_TURNS, TITLE_WORDS, AIClient, AIUnavailable, ReplyRequest, Source, Turn
 from app.repositories.base import Repository
 from app.services.common import citation_title
 
@@ -21,6 +21,7 @@ KEEP = 8           # chunks sent to Gemini
 RRF_K = 60         # reciprocal rank fusion constant
 CONTEXT_MESSAGES = 3      # earlier messages added to the search for follow-ups
 CONTEXT_REPLY_CHARS = 300  # how much of each Nudge reply goes into that search
+MAX_TITLE_CHARS = 60
 
 
 @dataclass
@@ -92,6 +93,20 @@ class ChatService:
         used = [s for s in sources if s.number in reply.used_sources]
         citations = self._citations(chunks, used) if settings.cite_materials else []
         return Answer(content=reply.text, citations=citations)
+
+    def title_for(
+        self, question: str, attachment: bytes | None = None, attachment_mime: str | None = None
+    ) -> str | None:
+        """A short name for a new chat from its first message. If the AI can't name it, the first
+        few words of the question are used instead, or None for a photo or PDF sent on its own."""
+        try:
+            title = self.ai.generate_title(question, attachment, attachment_mime)
+        except AIUnavailable:
+            title = ""
+        title = " ".join(title.split()).strip("\"'*").rstrip(".").strip()
+        if not title or len(title) > MAX_TITLE_CHARS:
+            title = " ".join(question.split()[:TITLE_WORDS])
+        return title[:MAX_TITLE_CHARS] or None
 
     def retrieve(
         self, course_id: str, question: str, include_restricted: bool, context: str = ""

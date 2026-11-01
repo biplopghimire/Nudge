@@ -119,6 +119,8 @@ export default function Chat() {
         old ? { ...old, messages: [...old.messages, response.sentMessage, response.reply] } : old,
       );
       setRevealId(response.reply.id);
+      // The server names a new chat after its first message, so fetch the new title.
+      if (!data?.messages.length) client.invalidateQueries({ queryKey: keys.thread(id) });
       client.invalidateQueries({ queryKey: keys.threads });
     } catch (error) {
       haptics.error();

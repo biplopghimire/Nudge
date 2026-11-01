@@ -88,6 +88,51 @@ def test_restricted_sources_are_never_reported_as_used():
     assert reply.used_sources == [2]
 
 
+def test_gemini_names_a_chat():
+    seen = []
+
+    def handler(request):
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json={"candidates": [{"content": {"parts": [{"text": "Integration by parts"}]}}]})
+
+    assert fake_gemini(handler, chat_models=["m"]).generate_title("How do I pick u?") == "Integration by parts"
+    assert seen[0]["contents"][0]["parts"] == [{"text": "How do I pick u?"}]
+
+    fake_gemini(handler, chat_models=["m"]).generate_title("", b"photo", "image/jpeg")
+    assert seen[1]["contents"][0]["parts"][1]["inline_data"]["mime_type"] == "image/jpeg"
+
+
+def test_busy_title_tries_each_model_once():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        return httpx.Response(503, json={"error": {"message": "busy"}})
+
+    with pytest.raises(AIUnavailable):
+        fake_gemini(handler, chat_models=["a", "b"]).generate_title("How do I pick u?")
+    assert len(calls) == 2
+
+
+def test_chat_titles_are_cleaned_up_or_fall_back_to_the_question(monkeypatch):
+    ai = MockAIClient()
+    chat = ChatService(InMemoryRepository(), ai)
+    question = "Can you explain the chain rule from lecture 5 again please?"
+
+    monkeypatch.setattr(ai, "generate_title", lambda *args: '"Chain rule review."\n')
+    assert chat.title_for(question) == "Chain rule review"
+
+    monkeypatch.setattr(ai, "generate_title", lambda *args: "x" * 200)
+    assert chat.title_for(question) == "Can you explain the chain rule"
+
+    def down(*args):
+        raise AIUnavailable("down")
+
+    monkeypatch.setattr(ai, "generate_title", down)
+    assert chat.title_for(question) == "Can you explain the chain rule"
+    assert chat.title_for("", b"photo", "image/jpeg") is None  # a photo alone keeps "New chat"
+
+
 def test_embeddings_are_batched_and_unit_length():
     sizes = []
 

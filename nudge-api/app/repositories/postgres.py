@@ -375,6 +375,9 @@ class PostgresRepository(Repository):
     def touch_thread(self, thread_id: str, updated_at: datetime) -> None:
         self._execute("update threads set updated_at = %(t)s where id = %(id)s", {"t": updated_at, "id": thread_id})
 
+    def rename_thread(self, thread_id: str, title: str) -> None:
+        self._execute("update threads set title = %(t)s where id = %(id)s", {"t": title, "id": thread_id})
+
     def get_message(self, message_id: str) -> Message | None:
         row = self._one(f"select {MESSAGE_COLUMNS} from messages where id = %(id)s", {"id": message_id})
         return _message(row) if row else None
