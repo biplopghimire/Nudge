@@ -59,6 +59,10 @@ class Material:
     restricted: bool = False
     status: MaterialStatus = "processing"
     uploaded_at: datetime | None = None
+    error: str | None = None  # why processing failed, in words a teacher can act on
+    progress: int = 0  # 0-100 while processing
+    stage: str | None = None  # "Reading pages 9-16 of 40"
+    processing_started_at: datetime | None = None
 
 
 @dataclass

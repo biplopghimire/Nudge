@@ -131,3 +131,26 @@ def test_dashboard(client, prof_h):
 def test_teacher_profile_counts(client, prof_h):
     stats = client.get("/teacher/me", headers=prof_h).json()["stats"]
     assert stats == {"sectionsNow": 2, "students": 4, "semesters": 4}
+
+
+def test_percent_encoded_file_names_are_decoded(client, prof_h):
+    material = client.post(
+        f"/teacher/courses/{C272}/materials",
+        headers=prof_h,
+        files={"file": ("Lecture%208%20(final).pdf", b"%PDF-1.4 mock", "application/pdf")},
+        data={"kind": "slides"},
+    ).json()["material"]
+    assert material["title"] == "Lecture 8 (final).pdf"
+
+
+def test_teacher_opens_own_files_including_hidden(client, prof_h):
+    lecture = client.get("/teacher/materials/d0000000-0006-4000-8000-000000000001/link?page=4", headers=prof_h).json()
+    assert lecture["page"] == 4
+    assert "X-Goog-Expires=900" in lecture["url"]
+    hidden = client.get("/teacher/materials/d0000000-0004-4000-8000-000000000004/link", headers=prof_h)
+    assert hidden.status_code == 200
+
+
+def test_teacher_cannot_open_other_teachers_files(client, prof_k):
+    response = client.get("/teacher/materials/d0000000-0006-4000-8000-000000000001/link", headers=prof_k)
+    assert response.status_code == 404

@@ -9,6 +9,7 @@ from app.domain import Assignment, Course, CourseSettings, Material, MaterialKin
 from app.errors import ApiError, bad_request, not_found
 from app.integrations.storage import StorageClient
 from app.repositories.base import Repository
+from app.schemas.student import MaterialLinkResponse
 from app.schemas.teacher import (
     CanvasImportRequest,
     CopyFrom,
@@ -219,7 +220,29 @@ class TeacherService:
                 uploaded_at=utc_now(),
             )
         )
-        return MaterialResponse(material=self.views.material(material))
+        self.repo.start_processing(material.id)
+        return MaterialResponse(material=self.views.material(self.repo.get_material(material.id)))
+
+    def retry_material(self, teacher: User, material_id: str) -> MaterialResponse:
+        material = self.repo.get_material(material_id)
+        if not material:
+            raise not_found("File")
+        self._own_course(teacher, material.course_id)
+        if material.status == "processing":
+            raise ApiError(409, "already_processing", "This file is still being read.")
+        self.repo.start_processing(material.id)
+        return MaterialResponse(material=self.views.material(self.repo.get_material(material.id)))
+
+    def material_link(self, teacher: User, material_id: str, page: int | None) -> MaterialLinkResponse:
+        """Teachers can open any file in their own course, hidden ones included."""
+        material = self.repo.get_material(material_id)
+        if not material:
+            raise not_found("File")
+        self._own_course(teacher, material.course_id)
+        url, expires_at = self.storage.signed_url(
+            material.storage_path, timedelta(minutes=self.settings.signed_url_minutes)
+        )
+        return MaterialLinkResponse(url=url, page=page, expires_at=expires_at)
 
     def dashboard(self, teacher: User, course_id: str) -> DashboardResponse:
         course = self._own_course(teacher, course_id)

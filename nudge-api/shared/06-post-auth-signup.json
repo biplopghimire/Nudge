@@ -1,0 +1,39 @@
+{
+  "method": "POST",
+  "path": "/auth/signup",
+  "description": "Create a student or teacher account and sign in. Same response as login. Errors: 400 for a missing name, invalid email or a password under 8 characters; 409 email_taken if the email already has an account.",
+  "usedOn": [
+    "Sign in (create account)"
+  ],
+  "types": {
+    "request": "SignupRequest",
+    "response": "LoginResponse"
+  },
+  "request": {
+    "body": {
+      "name": "Jordan Rivera",
+      "email": "jrivera@andrew.cmu.edu",
+      "password": "••••••••",
+      "role": "student"
+    }
+  },
+  "response": {
+    "status": 201,
+    "body": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "user": {
+        "id": "5f1c2d3e-8a9b-4c7d-9e0f-123456789abc",
+        "name": "Jordan Rivera",
+        "email": "jrivera@andrew.cmu.edu",
+        "role": "student"
+      }
+    }
+  },
+  "errorExample": {
+    "status": 409,
+    "body": {
+      "error": "email_taken",
+      "message": "An account with that email already exists. Try signing in."
+    }
+  }
+}

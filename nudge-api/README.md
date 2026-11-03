@@ -1,6 +1,13 @@
 # Nudge API
 
-FastAPI backend for Nudge. All endpoints below are implemented. For now the database, Gemini, Cloud Storage and login are mocked, so it runs with no accounts or keys.
+FastAPI backend for Nudge. All endpoints below are implemented. The Nudge engine (Postgres + pgvector search, Gemini, Cloud Storage, real login) is live on Cloud Run. By default it runs on mocks locally, so it also works with no accounts or keys.
+
+## Live
+
+**https://nudge-api-214919077406.us-east1.run.app** ([docs](https://nudge-api-214919077406.us-east1.run.app/docs))
+
+Runs on Google Cloud Run (`us-east1`) as the `nudge-backend` service account, with Supabase Postgres + pgvector,
+Gemini, the private `nudge-course-files` bucket and real login. Sign up with `POST /auth/signup`.
 
 ## Run it
 
@@ -12,13 +19,31 @@ pip install -r requirements-dev.txt
 uvicorn app.main:app --reload
 ```
 
+That runs on mocks (in-memory data, canned AI replies). To run the real engine locally:
+
+1. **Postgres with pgvector:** install [Postgres.app](https://postgresapp.com) (pgvector is included) and start it, then `createdb nudge`.
+2. **`.env`** (copy `.env.example`):
+   ```
+   NUDGE_REPOSITORY=postgres
+   NUDGE_DATABASE_URL=postgresql:///nudge
+   NUDGE_AI=gemini
+   NUDGE_GEMINI_API_KEY=your key from https://aistudio.google.com/apikey
+   NUDGE_STORAGE=local
+   NUDGE_AUTH=jwt
+   NUDGE_JWT_SECRET=a long random string (see .env.example)
+   NUDGE_SEED_PASSWORD=a password for the example accounts
+   ```
+3. **Tables and example data:** `python -m scripts.db setup` (embeds the example chunks with Gemini).
+4. `uvicorn app.main:app --reload`, then in another terminal `python -m scripts.smoke`. It uploads `samples/lecture-7-integration-by-parts.pdf` as Prof. H, waits for processing, and asks four questions as Sam, printing each reply and its citation chips.
+
 - Interactive docs: http://localhost:8000/docs
 - From the Expo app on a phone, use your computer's LAN IP, for example `uvicorn app.main:app --reload --host 0.0.0.0`, then call `http://192.168.x.x:8000`.
-- Tests: `pytest`. `tests/test_examples.py` checks every endpoint returns the same shape as its example JSON file (planned endpoints are skipped).
+- Tests: `pytest`. To also run every API test against Postgres: `createdb nudge_test`, `NUDGE_DATABASE_URL=postgresql:///nudge_test python -m scripts.db reset`, then `NUDGE_TEST_DATABASE_URL=postgresql:///nudge_test pytest`. `tests/test_examples.py` checks every endpoint returns the same shape as its example JSON file (planned endpoints are skipped).
 
-### Mock accounts
+### Example accounts
 
-Any non-empty password works. The token is `mock-{userId}`.
+With `NUDGE_AUTH=mock` (the default) any non-empty password works and the token is `mock-{userId}`.
+With `NUDGE_AUTH=jwt` they use `NUDGE_SEED_PASSWORD`, and new accounts come from `POST /auth/signup`.
 
 | Email | Role | Notes |
 |---|---|---|
@@ -28,7 +53,7 @@ Any non-empty password works. The token is `mock-{userId}`.
 | `profh@cmu.edu` | teacher | Teaches 67-272 (join code `K7M4QX`), has past semesters to reuse and 1 chat |
 | `profk@cmu.edu` | teacher | Teaches 15-213 (join code `H2QW9D`) |
 
-Data is kept in memory and resets when the server restarts. Uploads stay "processing" for 5 seconds, then become "ready".
+With `NUDGE_REPOSITORY=memory`, data resets when the server restarts and uploads stay "processing" for 5 seconds. With Postgres, `python -m scripts.db seed` resets the data.
 
 ## How the code is organized
 
@@ -50,25 +75,60 @@ app/
   schemas/           request/response models, camelCase JSON (same names as nudge-types.ts)
   repositories/      all database access
     base.py          the contract: every query the services need
-    memory.py        mock (used now)
-    postgres.py      Postgres + pgvector (to fill in)
+    memory.py        in-memory version
+    postgres.py      Postgres + pgvector
     seed.py          example data, same IDs as the JSON files
+    pg_seed.py       loads the example data into Postgres
   integrations/      outside services, each an interface + a mock
-    ai.py  storage.py  auth.py
+    ai.py            the AI interface, Nudge's instructions, mock AI
+    gemini.py        Gemini: embeddings, PDF transcription, replies; timeouts and model fallback
+    storage.py       file storage: in-memory mock, local disk, Google Cloud Storage
+    auth.py
 db/schema.sql        Postgres tables (Part 3 plus the columns the API needs)
+scripts/db.py        create the tables and load example data
+scripts/smoke.py     end-to-end check against a running server
+scripts/gcp_setup.sh one-time Google Cloud permissions
+scripts/deploy.sh    deploy to Cloud Run
+Dockerfile           the Cloud Run container
+samples/             a 4-page lecture PDF for testing uploads
 ```
 
 A request goes **router → service → repository / integrations**. Services only use the interfaces in `repositories/base.py` and `integrations/`, so replacing a mock never touches the logic.
 
-## Replacing the mocks
+## How the engine works
 
-| Mock | What to do | Switch |
-|---|---|---|
-| Database | Run `db/schema.sql` in Supabase. Fill in the `TODO` methods in `repositories/postgres.py` (the two RAG searches are already written). `pip install -r requirements-postgres.txt`. | `NUDGE_REPOSITORY=postgres`, `NUDGE_DATABASE_URL=...` |
-| Gemini | Write `GeminiClient(AIClient)` in `integrations/ai.py` and return it from `build_ai` in `deps.py`. | `NUDGE_AI=gemini`, `NUDGE_GEMINI_API_KEY=...` |
-| Cloud Storage | Write `GCSStorage(StorageClient)` in `integrations/storage.py` and return it from `build_storage`. | `NUDGE_STORAGE=gcs` |
-| Login | Write a real `AuthProvider` (password hashes or Supabase Auth, signed JWTs) in `integrations/auth.py`. | add a value to `auth` in `config.py` |
-| PDF pages | `split_pages` in `services/ingestion.py` treats a file as one page. Render each PDF page to an image. | none |
+**Upload** (`services/ingestion.py`, runs in the background after `POST /teacher/courses/{id}/materials`):
+the file is saved to storage, Gemini transcribes each page to text (PDFs are sent in parts of 8 pages, math as LaTeX),
+each page is split into chunks of at most 400 words labeled like "Lecture 7, page 2 (Choosing u)", the chunks are
+embedded with `gemini-embedding-2` (768 numbers) and saved. The material goes from `processing` to `ready` (or `failed`).
+
+**Question** (`services/chat.py`): the question is embedded and searched two ways in the course's chunks (pgvector
+cosine distance, and Postgres full-text search on any shared word). The two rankings are merged, and the best 8 chunks
+go to Gemini as numbered sources with Nudge's rules (`integrations/ai.py`: course material only, hints only when the
+setting is on, never reveal solution keys). Gemini returns the reply and which sources it used; those become the
+citation chips. Solution keys are only searched when a student sends their own work.
+
+**Accounts** (`NUDGE_AUTH=jwt`): passwords are stored as salted scrypt hashes, and login returns a token signed with
+`NUDGE_JWT_SECRET` that lasts 30 days. `POST /auth/signup` creates student or teacher accounts.
+
+**Reliability:** every Gemini call has a timeout. When a model is overloaded (503) or times out, the next model in the
+list is tried, then the whole list once more. If all fail, the API answers `503 nudge_busy` and nothing is saved.
+
+## Deploying
+
+One-time setup (already done for `nudge-513020`):
+
+1. Google Cloud project with billing, `gcloud auth login` and `gcloud auth application-default login`.
+2. The bucket: `gcloud storage buckets create gs://nudge-course-files --location us-east1 --default-storage-class STANDARD --uniform-bucket-level-access --public-access-prevention`
+3. `bash scripts/gcp_setup.sh`: the `nudge-backend` service account and its permissions (no key files).
+4. Supabase project in East US with the Data API off. Put its Session pooler string in `.env` as
+   `NUDGE_PROD_DATABASE_URL`, then create the tables and example data:
+   `NUDGE_DATABASE_URL="$(grep ^NUDGE_PROD_DATABASE_URL= .env | cut -d= -f2-)" python -m scripts.db setup`
+
+Every deploy after that: `bash scripts/deploy.sh` (stores the secrets in Secret Manager the first time, builds the
+Dockerfile with Cloud Build and deploys). Check it with `python -m scripts.smoke https://nudge-api-214919077406.us-east1.run.app`.
+
+To use Cloud Storage from your laptop, set `NUDGE_STORAGE=gcs`; it acts as `nudge-backend` through your gcloud login.
 
 Real credentials go in `nudge-api/.env`, which git ignores.
 
@@ -78,13 +138,14 @@ Each JSON file has the method, path, the screens that use it, the TypeScript typ
 
 The types are in [`nudge-types.ts`](nudge-types.ts). Each example response is one filled-in instance of the type named in its `types.response` field, and field names match exactly.
 
-Every request except login sends `Authorization: Bearer {token}`. After login, students use `/student/...` and teachers use `/teacher/...`; these reject the other role's token. The chat endpoints under `/threads` accept either role and check the role inside: students can use threads in courses they are enrolled in, teachers in courses they teach. Each thread records its `ownerRole`.
+Every request except login and sign-up sends `Authorization: Bearer {token}`. After login, students use `/student/...` and teachers use `/teacher/...`; these reject the other role's token. The chat endpoints under `/threads` accept either role and check the role inside: students can use threads in courses they are enrolled in, teachers in courses they teach. Each thread records its `ownerRole`.
 
 ## Shared
 
 | Method | Path | What it does | File |
 |---|---|---|---|
 | POST | `/auth/login` | Sign in as a student or teacher. | [01](shared/01-post-auth-login.json) |
+| POST | `/auth/signup` | Create a student or teacher account and sign in. | [06](shared/06-post-auth-signup.json) |
 | GET | `/threads` | List your past chats, newest first (`?q=` to search by title). | [02](shared/02-get-threads.json) |
 | POST | `/threads` | Start a new chat in a course, optionally tied to an assignment. | [03](shared/03-post-threads.json) |
 | GET | `/threads/{threadId}` | Get one chat and all its messages, including Nudge's citations. | [04](shared/04-get-thread.json) |
@@ -113,5 +174,7 @@ Every request except login sends `Authorization: Bearer {token}`. After login, s
 | GET | `/teacher/courses/{courseId}` | Get one course with its join code, Nudge settings and all materials, including restricted ones. | [05](teacher/05-get-course.json) |
 | PATCH | `/teacher/courses/{courseId}/settings` | Change how Nudge helps in this course, and turn deadline reminders on for every student. | [06](teacher/06-patch-course-settings.json) |
 | POST | `/teacher/courses/{courseId}/materials` | Upload a PDF or photo (multipart/form-data). | [07](teacher/07-post-course-materials.json) |
+| POST | `/teacher/materials/{materialId}/retry` | Read a file that failed again, without uploading it again. | [10](teacher/10-post-material-retry.json) |
+| GET | `/teacher/materials/{materialId}/link` | Get a temporary link (15 minutes) to open one of your course files (test chat citations). | [11](teacher/11-get-material-link.json) |
 | GET | `/teacher/courses/{courseId}/dashboard` | Question count, active students, flagged count, trending topics and flagged answers waiting for review (student questions only). | [08](teacher/08-get-course-dashboard.json) |
 | POST | `/teacher/courses/{courseId}/canvas/import` | *Planned for v2, details TBD.* Import the syllabus, files and deadlines from Canvas. Returns 501 for now. | [09](teacher/09-post-canvas-import.json) |

@@ -1,0 +1,5 @@
+# Files `gcloud run deploy --source .` doesn't upload. Keeps secrets and the
+# local virtualenv off Cloud Build; the Dockerfile only copies what it needs.
+.gcloudignore
+.git
+#!include:.dockerignore

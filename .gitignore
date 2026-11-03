@@ -12,3 +12,6 @@ __pycache__/
 service-account*.json
 .pytest_cache/
 .ruff_cache/
+
+# local file storage (NUDGE_STORAGE=local)
+.storage/

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from app.schemas.common import CamelModel, UserOut
 
 
@@ -9,3 +11,10 @@ class LoginRequest(CamelModel):
 class LoginResponse(CamelModel):
     token: str
     user: UserOut
+
+
+class SignupRequest(CamelModel):
+    name: str
+    email: str
+    password: str
+    role: Literal["student", "teacher"]

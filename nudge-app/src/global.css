@@ -1,0 +1,120 @@
+@import "tailwindcss";
+@import "uniwind";
+
+@import "heroui-native/styles";
+
+/* End-user path: heroui-native lives in the project's node_modules, one
+   level up from this src/global.css file. */
+@source '../node_modules/heroui-native/lib';
+
+/*
+ * Nudge theme (from the v2 wireframes): white canvas, soft grey cards, deep teal
+ * for primary actions, mint for highlights and the axolotl, blush for due dates
+ * and flags. Every HeroUI component and our own components read these tokens,
+ * so restyling the app means editing this file.
+ */
+@layer theme {
+  :root {
+    @variant light {
+      --background: #ffffff;
+      --foreground: #0f1b1d;
+
+      --surface: #ffffff;
+      --surface-foreground: #0f1b1d;
+      --surface-secondary: #f3f6f5;
+      --surface-secondary-foreground: #0f1b1d;
+      --surface-tertiary: #e9efed;
+      --surface-tertiary-foreground: #0f1b1d;
+
+      --overlay: #ffffff;
+      --overlay-foreground: #0f1b1d;
+
+      --muted: #6b7a7c;
+
+      --default: #f1f4f3;
+      --default-foreground: #0f1b1d;
+
+      --accent: #1f5c60;
+      --accent-foreground: #ffffff;
+
+      --success: #2f9e7a;
+      --success-foreground: #ffffff;
+      --danger: #d64466;
+      --danger-foreground: #ffffff;
+
+      --field-background: #f3f6f5;
+      --field-foreground: #0f1b1d;
+      --field-placeholder: #8a9799;
+
+      --border: #e5ebe9;
+      --separator: #e2e8e6;
+      --focus: #1f5c60;
+
+      --mint: #9fdcc8;
+      --mint-soft: #e2f4ee;
+      --mint-foreground: #1f5c60;
+      --blush: #fde8ee;
+      --blush-foreground: #c93c61;
+      --bubble: #e2f4ee;
+      --bubble-foreground: #10393b;
+    }
+
+    @variant dark {
+      --background: #0b1214;
+      --foreground: #eef5f3;
+
+      --surface: #121b1d;
+      --surface-foreground: #eef5f3;
+      --surface-secondary: #162124;
+      --surface-secondary-foreground: #eef5f3;
+      --surface-tertiary: #1d2a2d;
+      --surface-tertiary-foreground: #eef5f3;
+
+      --overlay: #162124;
+      --overlay-foreground: #eef5f3;
+
+      --muted: #8fa1a3;
+
+      --default: #1a2629;
+      --default-foreground: #eef5f3;
+
+      --accent: #7fd1b9;
+      --accent-foreground: #08201f;
+
+      --success: #5cc79f;
+      --success-foreground: #08201f;
+      --danger: #f0708e;
+      --danger-foreground: #2a0812;
+
+      --field-background: #162124;
+      --field-foreground: #eef5f3;
+      --field-placeholder: #6f8285;
+
+      --border: #23302f;
+      --separator: #233133;
+      --focus: #7fd1b9;
+
+      --mint: #5fb8a2;
+      --mint-soft: #15302c;
+      --mint-foreground: #a8e6d3;
+      --blush: #3a1a24;
+      --blush-foreground: #f59ab2;
+      --bubble: #17322e;
+      --bubble-foreground: #d7f1e8;
+    }
+  }
+}
+
+@theme inline static {
+  --color-mint: var(--mint);
+  --color-mint-soft: var(--mint-soft);
+  --color-mint-foreground: var(--mint-foreground);
+  --color-blush: var(--blush);
+  --color-blush-foreground: var(--blush-foreground);
+  --color-bubble: var(--bubble);
+  --color-bubble-foreground: var(--bubble-foreground);
+}
+
+@theme {
+  --radius: 0.75rem;
+}

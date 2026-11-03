@@ -31,7 +31,11 @@
         "kind": "slides",
         "sizeBytes": 2516582,
         "restricted": false,
-        "status": "processing"
+        "status": "processing",
+        "progress": 0,
+        "stage": "Waiting to start",
+        "etaSeconds": null,
+        "error": null
       }
     }
   }
