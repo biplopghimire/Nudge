@@ -8,8 +8,8 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Skeleton, useToast } from "heroui-native";
 import { type ComponentRef, useCallback, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
-import { KeyboardStickyView } from "react-native-keyboard-controller";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { KeyboardStickyView, useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+import Animated, { FadeIn, FadeInDown, useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { NudgeMark } from "@/components/brand/nudge-avatar";
@@ -70,6 +70,11 @@ export default function Chat() {
     64,
   );
   const { freeze, scrollMessageToEnd } = useKeyboardScrollToEnd({ listRef });
+
+  // The composer rises with the keyboard (by its height minus the bottom inset), so the empty
+  // state gives up the same space and scrolls above the composer instead of hiding behind it.
+  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
+  const emptyKeyboardSpace = useAnimatedStyle(() => ({ marginBottom: Math.max(0, -keyboardHeight.value - insets.bottom) }));
 
   // Pick up a photo taken on the camera screen.
   useFocusEffect(
@@ -174,21 +179,28 @@ export default function Chat() {
       </View>
 
       {empty ? (
-        <Animated.View entering={FadeIn.duration(300)} className="flex-1 items-center justify-center px-8">
-          <NudgeMark size={80} />
-          <Text className="mt-5 text-center text-[22px] font-bold tracking-tight text-foreground">What are you working on?</Text>
-          <Text className="mt-2 text-center text-[15px] leading-5 text-muted">
-            Ask about {thread?.courseCode ?? "your course"}, or send a photo of your work.
-          </Text>
-          <View className="mt-6 w-full gap-2">
-            {SUGGESTIONS.map((suggestion, index) => (
-              <Animated.View key={suggestion} entering={FadeInDown.delay(120 + index * 70).springify()}>
-                <Tappable onPress={() => send(suggestion)} className="rounded-2xl bg-surface-secondary px-4 py-3.5" accessibilityRole="button">
-                  <Text className="text-[15px] text-foreground">{suggestion}</Text>
-                </Tappable>
-              </Animated.View>
-            ))}
-          </View>
+        <Animated.View style={[{ flex: 1 }, emptyKeyboardSpace]}>
+          <Animated.ScrollView
+            entering={FadeIn.duration(300)}
+            contentContainerStyle={{ flexGrow: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, paddingVertical: 24 }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+          >
+            <NudgeMark size={80} />
+            <Text className="mt-5 text-center text-[22px] font-bold tracking-tight text-foreground">What are you working on?</Text>
+            <Text className="mt-2 text-center text-[15px] leading-5 text-muted">
+              Ask about {thread?.courseCode ?? "your course"}, or send a photo of your work.
+            </Text>
+            <View className="mt-6 w-full gap-2">
+              {SUGGESTIONS.map((suggestion, index) => (
+                <Animated.View key={suggestion} entering={FadeInDown.delay(120 + index * 70).springify()}>
+                  <Tappable onPress={() => send(suggestion)} className="rounded-2xl bg-surface-secondary px-4 py-3.5" accessibilityRole="button">
+                    <Text className="text-[15px] text-foreground">{suggestion}</Text>
+                  </Tappable>
+                </Animated.View>
+              ))}
+            </View>
+          </Animated.ScrollView>
         </Animated.View>
       ) : (
         <KeyboardAwareLegendList
