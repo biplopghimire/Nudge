@@ -218,7 +218,6 @@ export default function Chat() {
             )
           }
           contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 12 }}
-          alignItemsAtEnd
           initialScrollAtEnd
           maintainScrollAtEnd
           maintainVisibleContentPosition
