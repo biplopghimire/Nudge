@@ -21,6 +21,16 @@ PROVIDER=nudge-repo
 
 step() { echo; echo "== $*"; }
 
+FAILED=0
+# A new service account takes a little while to show up for IAM; retry until it does.
+retry() {
+  for attempt in 1 2 3 4 5 6; do
+    "$@" 2>/dev/null && return 0
+    sleep $((attempt * 5))
+  done
+  "$@" || { FAILED=1; return 1; }
+}
+
 step "Enable the token exchange API"
 gcloud services enable sts.googleapis.com iamcredentials.googleapis.com --project "$PROJECT"
 
@@ -32,13 +42,13 @@ gcloud iam service-accounts describe "$SA" --project "$PROJECT" >/dev/null 2>&1 
 step "Roles for deploying from source"
 for role in roles/run.admin roles/cloudbuild.builds.editor roles/artifactregistry.writer \
             roles/storage.admin roles/serviceusage.serviceUsageConsumer roles/logging.viewer; do
-  gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:$SA" --role "$role" \
+  retry gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:$SA" --role "$role" \
     --condition=None --quiet >/dev/null && echo "   $role"
 done
 
 step "Let it start builds and run the API as the existing service accounts"
 for runas in "nudge-backend@$PROJECT.iam.gserviceaccount.com" "$PROJECT_NUMBER-compute@developer.gserviceaccount.com"; do
-  gcloud iam service-accounts add-iam-policy-binding "$runas" --project "$PROJECT" \
+  retry gcloud iam service-accounts add-iam-policy-binding "$runas" --project "$PROJECT" \
     --member "serviceAccount:$SA" --role roles/iam.serviceAccountUser --quiet >/dev/null && echo "   $runas"
 done
 
@@ -55,9 +65,13 @@ gcloud iam workload-identity-pools providers describe "$PROVIDER" --project "$PR
        --attribute-condition "assertion.repository_id == '$REPO_ID' && assertion.ref == 'refs/heads/main'"
 
 step "Let the repository's main branch use the service account"
-gcloud iam service-accounts add-iam-policy-binding "$SA" --project "$PROJECT" --role roles/iam.workloadIdentityUser \
+retry gcloud iam service-accounts add-iam-policy-binding "$SA" --project "$PROJECT" --role roles/iam.workloadIdentityUser \
   --member "principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL/attribute.repository_id/$REPO_ID" \
   --quiet >/dev/null && echo "   done"
 
 echo
+if [[ $FAILED == 1 ]]; then
+  echo "Some steps failed (see the errors above). Run this script again; it keeps what already worked."
+  exit 1
+fi
 echo "Done. Merges to main that change nudge-api/ now deploy automatically."
