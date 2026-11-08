@@ -88,7 +88,8 @@ db/schema.sql        Postgres tables (Part 3 plus the columns the API needs)
 scripts/db.py        create the tables and load example data
 scripts/smoke.py     end-to-end check against a running server
 scripts/gcp_setup.sh one-time Google Cloud permissions
-scripts/deploy.sh    deploy to Cloud Run
+scripts/deploy.sh    deploy to Cloud Run (GitHub runs it on every merge to main)
+scripts/setup-github-deploy.sh  one-time Google Cloud access for those GitHub deploys
 Dockerfile           the Cloud Run container
 samples/             a 4-page lecture PDF for testing uploads
 ```
@@ -125,8 +126,16 @@ One-time setup (already done for `nudge-513020`):
    `NUDGE_PROD_DATABASE_URL`, then create the tables and example data:
    `NUDGE_DATABASE_URL="$(grep ^NUDGE_PROD_DATABASE_URL= .env | cut -d= -f2-)" python -m scripts.db setup`
 
-Every deploy after that: `bash scripts/deploy.sh` (stores the secrets in Secret Manager the first time, builds the
-Dockerfile with Cloud Build and deploys). Check it with `python -m scripts.smoke https://nudge-api-214919077406.us-east1.run.app`.
+5. `bash scripts/setup-github-deploy.sh`: lets GitHub Actions deploy (a `github-deployer` service account that only
+   pushes to `main` of this repository can use; no key files).
+
+**`main` is what's live.** Every merge to `main` that changes `nudge-api/` runs the API tests and, if they pass,
+deploys (`.github/workflows/deploy.yml`). Watch it on the repo's Actions tab, or redeploy `main` by hand there with
+"Run workflow". Deploys don't change the database: run `scripts.db` against production yourself before merging a
+change to `db/schema.sql`.
+
+To deploy from your laptop instead: `bash scripts/deploy.sh` (stores the secrets in Secret Manager the first time,
+builds the Dockerfile with Cloud Build and deploys). Check it with `python -m scripts.smoke https://nudge-api-214919077406.us-east1.run.app`.
 
 To use Cloud Storage from your laptop, set `NUDGE_STORAGE=gcs`; it acts as `nudge-backend` through your gcloud login.
 
