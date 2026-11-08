@@ -26,6 +26,9 @@ jobs:
           cache: npm
           cache-dependency-path: nudge-app/package-lock.json
       - run: npm ci
+      # `expo start` writes this file locally (it's gitignored); it declares
+      # Expo's global types, such as `.css` imports.
+      - run: echo '/// <reference types="expo/types" />' > expo-env.d.ts
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test -- --ci
