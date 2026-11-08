@@ -1,0 +1,57 @@
+# Deploys the API to the live Cloud Run service (nudge-api) on every merge to
+# main that touches nudge-api/. The API tests must pass first. GitHub signs in
+# to Google Cloud with Workload Identity Federation (no stored keys); only
+# pushes to main of this repository are allowed to. One-time setup:
+# nudge-api/scripts/setup-github-deploy.sh
+name: Deploy API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "nudge-api/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch: # "Run workflow" on the Actions tab redeploys main by hand
+
+# One deploy at a time, in merge order; a running deploy is never cancelled.
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: API tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: nudge-api
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: nudge-api/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: pytest
+
+  deploy:
+    name: Deploy to Cloud Run
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://nudge-api-dmpcerzheq-ue.a.run.app/docs
+    permissions:
+      contents: read
+      id-token: write # lets GitHub prove to Google Cloud that this run is from main
+    steps:
+      - uses: actions/checkout@v5
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/214919077406/locations/global/workloadIdentityPools/github/providers/nudge-repo
+          service_account: github-deployer@nudge-513020.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: bash nudge-api/scripts/deploy.sh --code-only

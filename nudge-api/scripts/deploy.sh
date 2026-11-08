@@ -7,6 +7,10 @@
 # never printed): the Supabase URL, the Gemini key and a new login-token secret.
 # Later runs reuse them and only redeploy the code. To change a secret:
 #     printf '%s' "new value" | gcloud secrets versions add nudge-gemini-api-key --data-file=-
+#
+# GitHub Actions deploys every merge to main with `deploy.sh --code-only`
+# (.github/workflows/deploy.yml): no .env there, so the secrets step is skipped
+# and the existing secrets are used.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -27,17 +31,21 @@ create_secret() { # name; value on stdin
   fi
 }
 
-DATABASE_URL="$(env_value NUDGE_PROD_DATABASE_URL)"
-GEMINI_KEY="$(env_value NUDGE_GEMINI_API_KEY)"
-if [[ -z "$DATABASE_URL" || "$DATABASE_URL" == *"[YOUR-PASSWORD]"* ]]; then
-  echo "Set NUDGE_PROD_DATABASE_URL in nudge-api/.env first."; exit 1
-fi
-[[ -n "$GEMINI_KEY" ]] || { echo "Set NUDGE_GEMINI_API_KEY in nudge-api/.env first."; exit 1; }
+if [[ "${1:-}" == "--code-only" ]]; then
+  echo "1/2 Secrets: skipped (--code-only uses the ones already in Secret Manager)"
+else
+  DATABASE_URL="$(env_value NUDGE_PROD_DATABASE_URL)"
+  GEMINI_KEY="$(env_value NUDGE_GEMINI_API_KEY)"
+  if [[ -z "$DATABASE_URL" || "$DATABASE_URL" == *"[YOUR-PASSWORD]"* ]]; then
+    echo "Set NUDGE_PROD_DATABASE_URL in nudge-api/.env first."; exit 1
+  fi
+  [[ -n "$GEMINI_KEY" ]] || { echo "Set NUDGE_GEMINI_API_KEY in nudge-api/.env first."; exit 1; }
 
-echo "1/2 Secrets"
-printf '%s' "$DATABASE_URL" | create_secret nudge-database-url
-printf '%s' "$GEMINI_KEY" | create_secret nudge-gemini-api-key
-python3 -c "import secrets, sys; sys.stdout.write(secrets.token_urlsafe(48))" | create_secret nudge-jwt-secret
+  echo "1/2 Secrets"
+  printf '%s' "$DATABASE_URL" | create_secret nudge-database-url
+  printf '%s' "$GEMINI_KEY" | create_secret nudge-gemini-api-key
+  python3 -c "import secrets, sys; sys.stdout.write(secrets.token_urlsafe(48))" | create_secret nudge-jwt-secret
+fi
 
 echo "2/2 Build and deploy (takes a few minutes the first time)"
 # --no-cpu-throttling keeps upload processing (a background task) running after
