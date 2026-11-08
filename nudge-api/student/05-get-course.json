@@ -34,7 +34,11 @@
           "kind": "slides",
           "sizeBytes": 2516582,
           "restricted": false,
-          "status": "ready"
+          "status": "ready",
+          "progress": 100,
+          "stage": null,
+          "etaSeconds": null,
+          "error": null
         },
         {
           "id": "d0000000-0004-4000-8000-000000000002",
@@ -43,7 +47,11 @@
           "kind": "homework",
           "sizeBytes": 317440,
           "restricted": false,
-          "status": "ready"
+          "status": "ready",
+          "progress": 100,
+          "stage": null,
+          "etaSeconds": null,
+          "error": null
         },
         {
           "id": "d0000000-0001-4000-8000-000000000003",
@@ -52,7 +60,11 @@
           "kind": "syllabus",
           "sizeBytes": 184320,
           "restricted": false,
-          "status": "ready"
+          "status": "ready",
+          "progress": 100,
+          "stage": null,
+          "etaSeconds": null,
+          "error": null
         }
       ]
     }

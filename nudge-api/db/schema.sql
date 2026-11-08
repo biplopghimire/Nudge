@@ -11,6 +11,7 @@ create table users (
   role        text not null check (role in ('student', 'teacher')),
   department  text,                                     -- added: teacher profile
   notifications jsonb not null default '{}',            -- {"deadlineReminders": true, ...}
+  password_hash text,                                   -- added: scrypt hash, null for mock-login accounts
   created_at  timestamptz not null default now()
 );
 
@@ -44,6 +45,10 @@ create table materials (
   storage_path text not null,             -- path in Google Cloud Storage
   restricted  boolean not null default false,   -- solution keys and rubrics
   status      text not null default 'processing' check (status in ('processing', 'ready', 'failed')),
+  error       text,                       -- added: why processing failed, shown to the teacher
+  progress    integer not null default 0, -- added: 0-100 while processing
+  stage       text,                       -- added: 'Reading pages 9-16 of 40'
+  processing_started_at timestamptz,      -- added: for the time-left estimate
   uploaded_at timestamptz not null default now()
 );
 
@@ -91,8 +96,11 @@ create table messages (
   attachment_type text check (attachment_type in ('image', 'pdf')),                     -- added
   attachment_source text check (attachment_source in ('camera', 'library', 'files')),  -- added
   citations   jsonb not null default '[]',  -- [{materialId, title, page}]
-  created_at  timestamptz not null default now()
+  created_at  timestamptz not null default now(),
+  seq         bigint generated always as identity  -- added: keeps insert order when timestamps tie
 );
+
+create index on messages (thread_id, created_at, seq);
 
 create table flags (
   id          uuid primary key default gen_random_uuid(),

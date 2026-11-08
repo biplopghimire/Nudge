@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "Nudge",
+    "slug": "nudge",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "nudge",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "edu.cmu.nudge",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Nudge uses the camera so you can snap your work and ask about it.",
+        "NSPhotoLibraryUsageDescription": "Nudge lets you pick a photo of your work to ask about."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#E2F4EE"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "edu.cmu.nudge"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF",
+          "dark": {
+            "backgroundColor": "#0B1214"
+          }
+        }
+      ],
+      "expo-status-bar",
+      "expo-image",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Nudge uses the camera so you can snap your work and ask about it."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Nudge lets you pick a photo of your work to ask about."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

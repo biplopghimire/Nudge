@@ -90,7 +90,19 @@ class Views:
             size_bytes=material.size_bytes,
             restricted=material.restricted,
             status=material.status,
+            progress=100 if material.status == "ready" else material.progress,
+            stage=material.stage if material.status == "processing" else None,
+            eta_seconds=self._eta(material),
+            error=material.error if material.status == "failed" else None,
         )
+
+    @staticmethod
+    def _eta(material: Material) -> int | None:
+        """Time left, from how long it has taken so far. Only once there's enough to go on."""
+        if material.status != "processing" or not material.processing_started_at or material.progress < 5:
+            return None
+        elapsed = (utc_now() - material.processing_started_at).total_seconds()
+        return max(1, round(elapsed * (100 - material.progress) / material.progress))
 
     def thread(self, thread: Thread) -> ChatThreadOut:
         course = self.repo.get_course(thread.course_id)
