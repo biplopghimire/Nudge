@@ -4,18 +4,46 @@ Postgres when NUDGE_TEST_DATABASE_URL is set, for example:
     createdb nudge_test
     NUDGE_DATABASE_URL=postgresql:///nudge_test python -m scripts.db reset
     NUDGE_TEST_DATABASE_URL=postgresql:///nudge_test pytest
+
+Tests never reach Gemini (or any other real service). Before the app is
+imported, the NUDGE_* switches are forced to their mocks, so neither the shell
+nor nudge-api/.env (which may say NUDGE_AI=gemini) can switch them, and any
+real HTTP request made through httpx fails the test. Tests that exercise
+GeminiClient give it a fake transport (see tests/fakes.py).
 """
 
 import copy
 import os
 
-import pytest
-from fastapi.testclient import TestClient
+# Must run before anything imports app.main, which builds an app from the environment at import time.
+for _name in [n for n in os.environ if n.startswith("NUDGE_") and n != "NUDGE_TEST_DATABASE_URL"]:
+    del os.environ[_name]
+os.environ.update(NUDGE_REPOSITORY="memory", NUDGE_AI="mock", NUDGE_STORAGE="mock", NUDGE_AUTH="mock")
+os.environ["NUDGE_GEMINI_API_KEY"] = ""  # overrides a real key in .env
 
-from app.config import Settings
-from app.integrations.ai import MockAIClient
-from app.main import create_app
-from app.repositories.seed import default_seed
+import httpx  # noqa: E402
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+
+from app.config import Settings  # noqa: E402
+from app.integrations.ai import MockAIClient  # noqa: E402
+from app.main import create_app  # noqa: E402
+from app.repositories.seed import default_seed  # noqa: E402
+
+
+class RealNetworkBlocked(RuntimeError):
+    """A test tried to make a real HTTP request (for example to Gemini)."""
+
+
+@pytest.fixture(autouse=True)
+def block_real_http(monkeypatch):
+    """httpx's real transport refuses every request. httpx.MockTransport and
+    FastAPI's TestClient use their own transports, so they still work."""
+
+    def refuse(self, request: httpx.Request):
+        raise RealNetworkBlocked(f"Tests must not make real HTTP requests: {request.method} {request.url}")
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", refuse)
 
 SAM = "samlee@andrew.cmu.edu"
 ALEX = "alexchen@andrew.cmu.edu"
