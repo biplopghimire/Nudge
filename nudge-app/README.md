@@ -25,7 +25,7 @@ Use your Mac's Wi-Fi address (`ipconfig getifaddr en0`); `localhost` only works 
 `npx expo start` after changing it. The main [README](../README.md#running-nudge) walks through both setups and
 running on a phone, including `--tunnel` for networks that block it.
 
-Checks: `npm run typecheck` and `npm run lint`.
+Checks: `npm run typecheck`, `npm run lint` and `npm test` (Jest unit tests, next to the code in `__tests__` folders).
 
 ## What's inside
 
