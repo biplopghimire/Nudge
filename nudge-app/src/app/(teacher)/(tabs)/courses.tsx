@@ -8,14 +8,16 @@ import { Badge, EmptyState, Row } from "@/components/ui/list";
 import { LargeTitle, Screen, SectionLabel } from "@/components/ui/screen";
 import { enterRow } from "@/lib/motion";
 import { useTeacherCourses } from "@/lib/queries";
+import { usePullToRefresh } from "@/lib/pull-to-refresh";
 
 export default function Courses() {
-  const { data, isLoading, refetch, isRefetching } = useTeacherCourses();
+  const { data, isLoading, refetch } = useTeacherCourses();
+  const pullToRefresh = usePullToRefresh(refetch);
   const current = data?.semesters.find((s) => s.isCurrent);
   const past = data?.semesters.filter((s) => !s.isCurrent) ?? [];
 
   return (
-    <Screen tabBar refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />}>
+    <Screen tabBar refreshControl={<RefreshControl {...pullToRefresh} />}>
       <View className="h-6" />
       <LargeTitle title="Courses" />
 
