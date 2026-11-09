@@ -9,9 +9,11 @@ import { Badge, EmptyState, Row } from "@/components/ui/list";
 import { IconButton, LargeTitle, Screen, SectionLabel } from "@/components/ui/screen";
 import { dayGroup, relativeTime } from "@/lib/format";
 import { useThreads } from "@/lib/queries";
+import { usePullToRefresh } from "@/lib/pull-to-refresh";
 
 export default function Chats() {
-  const { data, isLoading, refetch, isRefetching } = useThreads();
+  const { data, isLoading, refetch } = useThreads();
+  const pullToRefresh = usePullToRefresh(refetch);
   const [query, setQuery] = useState("");
 
   const groups = useMemo(() => {
@@ -29,7 +31,7 @@ export default function Chats() {
 
   let index = 0;
   return (
-    <Screen tabBar refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />}>
+    <Screen tabBar refreshControl={<RefreshControl {...pullToRefresh} />}>
       <LargeTitle title="Chats" trailing={<IconButton icon="compose" label="New chat" tone="accent" onPress={() => router.navigate("/home")} />} />
 
       <SearchField value={query} onChange={setQuery}>

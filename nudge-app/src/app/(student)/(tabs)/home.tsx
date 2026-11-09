@@ -12,17 +12,19 @@ import { useAuth } from "@/lib/auth";
 import { dueLabel, greetingDate, initials } from "@/lib/format";
 import { enterRow } from "@/lib/motion";
 import { useStudentCourses } from "@/lib/queries";
+import { usePullToRefresh } from "@/lib/pull-to-refresh";
 import { startChat } from "@/lib/start-chat";
 
 export default function Home() {
   const { user } = useAuth();
-  const { data, isLoading, refetch, isRefetching } = useStudentCourses();
+  const { data, isLoading, refetch } = useStudentCourses();
+  const pullToRefresh = usePullToRefresh(refetch);
   const upNext = data?.upNext;
 
   return (
     <Screen
       tabBar
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />}
+      refreshControl={<RefreshControl {...pullToRefresh} />}
     >
       <View className="mb-4 flex-row items-center justify-between">
         <NudgeMark size={40} />

@@ -15,11 +15,13 @@ import { haptics } from "@/lib/haptics";
 import { MATERIAL_SOURCES, pickMaterials } from "@/lib/materials";
 import { enterRow } from "@/lib/motion";
 import { keys, useTeacherCourse } from "@/lib/queries";
+import { usePullToRefresh } from "@/lib/pull-to-refresh";
 import { startChat } from "@/lib/start-chat";
 
 export default function TeacherCourse() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, isLoading, refetch, isRefetching } = useTeacherCourse(id);
+  const { data, isLoading, refetch } = useTeacherCourse(id);
+  const pullToRefresh = usePullToRefresh(refetch);
   const client = useQueryClient();
   const { toast } = useToast();
   const [uploading, setUploading] = useState(0);
@@ -59,7 +61,7 @@ export default function TeacherCourse() {
 
   const course = data?.course;
   return (
-    <Screen refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => void refetch()} />}>
+    <Screen refreshControl={<RefreshControl {...pullToRefresh} />}>
       <BackButton />
       {course ? (
         <Animated.View entering={FadeIn} className="mb-2 mt-5">
