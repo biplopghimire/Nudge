@@ -1,6 +1,6 @@
 import type { Role } from "@api";
 import { router } from "expo-router";
-import { Button, Input, Label, Spinner, TextField, useToast } from "heroui-native";
+import { Button, FieldError, Input, Label, Spinner, TextField, useToast } from "heroui-native";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
@@ -15,8 +15,9 @@ import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { haptics } from "@/lib/haptics";
 import { layoutSpring, springs } from "@/lib/motion";
+import { type AuthFields, type AuthMode, MIN_PASSWORD, validateAuth } from "@/lib/validation";
 
-type Mode = "signIn" | "signUp";
+type Mode = AuthMode;
 
 export default function Welcome() {
   const insets = useSafeAreaInsets();
@@ -28,11 +29,27 @@ export default function Welcome() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  // A field shows its error once the person has left it, or after they try to submit.
+  const [touched, setTouched] = useState<Partial<Record<keyof AuthFields, boolean>>>({});
+  const [attempted, setAttempted] = useState(false);
 
-  const ready = email.includes("@") && password.length >= (mode === "signUp" ? 8 : 1) && (mode === "signIn" || name.trim());
+  const errors = validateAuth(mode, { name, email, password });
+  const errorFor = (field: keyof AuthFields) => (attempted || touched[field] ? errors[field] : undefined);
+  const touch = (field: keyof AuthFields) => () => setTouched((t) => ({ ...t, [field]: true }));
+
+  function changeMode(next: Mode) {
+    setMode(next);
+    setTouched({});
+    setAttempted(false);
+  }
 
   async function submit() {
-    if (!ready || busy) return;
+    if (busy) return;
+    if (Object.keys(errors).length > 0) {
+      setAttempted(true);
+      haptics.error();
+      return;
+    }
     setBusy(true);
     haptics.press();
     try {
@@ -70,7 +87,7 @@ export default function Welcome() {
       <Animated.View entering={FadeInDown.delay(120).springify().damping(springs.smooth.damping)} className="mt-10">
         <Segmented
           value={mode}
-          onChange={setMode}
+          onChange={changeMode}
           options={[
             { value: "signIn", label: "Sign in" },
             { value: "signUp", label: "Create account" },
@@ -85,46 +102,58 @@ export default function Welcome() {
               <RoleCard role="student" selected={role === "student"} onPress={() => setRole("student")} />
               <RoleCard role="teacher" selected={role === "teacher"} onPress={() => setRole("teacher")} />
             </View>
-            <TextField>
+            <TextField isInvalid={!!errorFor("name")}>
               <Label>Name</Label>
-              <Input value={name} onChangeText={setName} placeholder="Sam Lee" autoComplete="name" textContentType="name" />
+              <Input
+                value={name}
+                onChangeText={setName}
+                onBlur={touch("name")}
+                placeholder="Sam Lee"
+                autoComplete="name"
+                textContentType="name"
+              />
+              <FieldError>{errorFor("name")}</FieldError>
             </TextField>
           </Animated.View>
         ) : null}
 
         <Animated.View layout={layoutSpring}>
-          <TextField>
+          <TextField isInvalid={!!errorFor("email")}>
             <Label>Email</Label>
             <Input
               value={email}
               onChangeText={setEmail}
+              onBlur={touch("email")}
               placeholder="you@andrew.cmu.edu"
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
               textContentType="emailAddress"
             />
+            <FieldError>{errorFor("email")}</FieldError>
           </TextField>
         </Animated.View>
 
         <Animated.View layout={layoutSpring}>
-          <TextField>
+          <TextField isInvalid={!!errorFor("password")}>
             <Label>Password</Label>
             <Input
               value={password}
               onChangeText={setPassword}
-              placeholder={mode === "signUp" ? "At least 8 characters" : "Your password"}
+              onBlur={touch("password")}
+              placeholder={mode === "signUp" ? `At least ${MIN_PASSWORD} characters` : "Your password"}
               secureTextEntry
               autoComplete={mode === "signUp" ? "new-password" : "current-password"}
               textContentType={mode === "signUp" ? "newPassword" : "password"}
               returnKeyType="go"
               onSubmitEditing={submit}
             />
+            <FieldError>{errorFor("password")}</FieldError>
           </TextField>
         </Animated.View>
 
         <Animated.View layout={layoutSpring} className="mt-2">
-          <Button size="lg" className="rounded-full" onPress={submit} isDisabled={!ready || busy}>
+          <Button size="lg" className="rounded-full" onPress={submit} isDisabled={busy}>
             {busy ? <Spinner color="accent-foreground" /> : <Button.Label>{mode === "signIn" ? "Sign in" : "Create account"}</Button.Label>}
           </Button>
         </Animated.View>
