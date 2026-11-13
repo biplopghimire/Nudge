@@ -8,6 +8,7 @@ import { KeyboardStickyView } from "react-native-keyboard-controller";
 import Animated, {
   FadeIn,
   FadeInDown,
+  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -26,6 +27,10 @@ import { haptics } from "@/lib/haptics";
 import { springs } from "@/lib/motion";
 import { keys } from "@/lib/queries";
 
+// Pause between the last character and sending the code, so the final box can land,
+// the keyboard can close, and the screen doesn't jump straight to "You're in!".
+const SUBMIT_PAUSE_MS = 450;
+
 export default function Join() {
   const insets = useSafeAreaInsets();
   const client = useQueryClient();
@@ -33,6 +38,16 @@ export default function Join() {
   const [error, setError] = useState<string | null>(null);
   const shake = useSharedValue(0);
   const input = useRef<CodeInputHandle>(null);
+  const pause = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [queued, setQueued] = useState(false);
+
+  function cancelQueued() {
+    if (pause.current) clearTimeout(pause.current);
+    pause.current = null;
+    setQueued(false);
+  }
+
+  useEffect(() => cancelQueued, []);
 
   // autoFocus fires while the sheet is still sliding up, so iOS ignores it. Focus once it has landed.
   useEffect(() => {
@@ -51,16 +66,26 @@ export default function Join() {
       haptics.error();
       setError(e instanceof ApiError ? e.message : "Couldn't join. Try again.");
       shake.set(withSequence(...[-10, 10, -8, 8, -4, 0].map((x) => withTiming(x, { duration: 55 }))));
+      input.current?.focus();
     },
   });
 
   const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
 
   function submit(value = code) {
+    cancelQueued();
     if (value.length === 6 && !join.isPending) {
       haptics.press();
       join.mutate(value.toUpperCase());
     }
+  }
+
+  // Typing or pasting the last character sends the code after a short pause instead of instantly.
+  function submitAfterPause(value: string) {
+    cancelQueued();
+    input.current?.blur();
+    setQueued(true);
+    pause.current = setTimeout(() => submit(value), SUBMIT_PAUSE_MS);
   }
 
   async function paste() {
@@ -69,13 +94,13 @@ export default function Join() {
     haptics.tap();
     setCode(text);
     setError(null);
-    if (text.length === 6) submit(text);
+    if (text.length === 6) submitAfterPause(text);
   }
 
   if (join.isSuccess) {
     const course = join.data.course;
     return (
-      <View className="flex-1 items-center justify-center bg-background px-8">
+      <Animated.View entering={FadeIn.duration(250)} className="flex-1 items-center justify-center bg-background px-8">
         <Animated.View entering={ZoomIn.springify().damping(springs.bouncy.damping)}>
           <NudgeMark size={104} state="happy" />
         </Animated.View>
@@ -85,12 +110,14 @@ export default function Join() {
         <Animated.Text entering={FadeInDown.delay(230)} className="mt-2 text-center text-[16px] text-muted">
           {course.code} · {course.section} with {course.teacherName}
         </Animated.Text>
-      </View>
+      </Animated.View>
     );
   }
 
+  const sending = queued || join.isPending;
+
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: 16 }}>
+    <Animated.View exiting={FadeOut.duration(200)} className="flex-1 bg-background" style={{ paddingTop: 16 }}>
       <View className="px-5">
         <BackButton label="Close" />
       </View>
@@ -105,10 +132,11 @@ export default function Join() {
             ref={input}
             value={code}
             onChange={(value) => {
+              cancelQueued();
               setCode(value);
               setError(null);
             }}
-            onComplete={(value) => submit(value)}
+            onComplete={submitAfterPause}
             invalid={!!error}
           />
         </Animated.View>
@@ -127,11 +155,11 @@ export default function Join() {
 
       <KeyboardStickyView offset={{ opened: 12 }} style={{ marginTop: "auto" }}>
         <View className="px-6" style={{ paddingBottom: insets.bottom + 12 }}>
-          <Button size="lg" className="rounded-full" onPress={() => submit()} isDisabled={code.length < 6 || join.isPending}>
-            {join.isPending ? <Spinner color="accent-foreground" /> : <Button.Label>Join</Button.Label>}
+          <Button size="lg" className="rounded-full" onPress={() => submit()} isDisabled={code.length < 6 || sending}>
+            {sending ? <Spinner color="accent-foreground" /> : <Button.Label>Join</Button.Label>}
           </Button>
         </View>
       </KeyboardStickyView>
-    </View>
+    </Animated.View>
   );
 }
