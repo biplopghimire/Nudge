@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { NudgeMark } from "@/components/brand/nudge-avatar";
 import { AttachSheet, type AttachChoice } from "@/components/chat/attach-sheet";
+import { ClassSwitcher } from "@/components/chat/class-switcher";
 import { Composer, type PendingAttachment } from "@/components/chat/composer";
 import { NudgeReply, SentMessage } from "@/components/chat/messages";
 import { Thinking } from "@/components/chat/thinking";
@@ -54,6 +55,12 @@ export default function Chat() {
   const [draftKey] = useState(() => `draft-${Date.now()}`);
   const photoKey = threadId ?? draftKey;
   const { data, isLoading } = useThread(threadId);
+  // A class picked from the header's "Switch class" menu, which only a new chat can use.
+  const [switched, setSwitched] = useState<{ courseId: string; courseCode: string } | null>(null);
+  // Switching class drops the assignment the chat was started from, since it belongs to the old class.
+  const chat = switched
+    ? { ...switched, assignmentId: undefined, title: "New chat" }
+    : { courseId: draft.courseId, courseCode: draft.courseCode ?? "", assignmentId: draft.assignmentId, title: draft.title ?? "New chat" };
 
   const [text, setText] = useState("");
   const [attachment, setAttachment] = useState<PendingAttachment | null>(null);
@@ -95,7 +102,7 @@ export default function Chat() {
 
   /** Save a new chat on its first message. */
   async function createThread(): Promise<string> {
-    const { thread } = await api.createThread({ courseId: draft.courseId!, assignmentId: draft.assignmentId, title: draft.title ?? "New chat" });
+    const { thread } = await api.createThread({ courseId: chat.courseId!, assignmentId: chat.assignmentId, title: chat.title });
     client.setQueryData<GetThreadResponse>(keys.thread(thread.id), { thread, messages: [] });
     setThreadId(thread.id);
     router.setParams({ id: thread.id });
@@ -157,7 +164,7 @@ export default function Chat() {
     if (asset) setAttachment({ uri: asset.uri, name: asset.name, type: asset.mimeType ?? "application/pdf", source: "files" });
   }
 
-  const thread = data?.thread ?? (threadId ? undefined : { title: draft.title ?? "New chat", courseCode: draft.courseCode ?? "" });
+  const thread = data?.thread ?? (threadId ? undefined : { title: chat.title, courseCode: chat.courseCode });
   const empty = !isLoading && items.length === 0;
 
   return (
@@ -170,7 +177,18 @@ export default function Chat() {
               <Text className="shrink text-[17px] font-semibold text-foreground" numberOfLines={1}>
                 {thread.title}
               </Text>
-              <Badge tone="mint">{thread.courseCode}</Badge>
+              {user?.role === "student" ? (
+                <ClassSwitcher
+                  courseId={chat.courseId}
+                  courseCode={thread.courseCode}
+                  locked={!!threadId || !!sending}
+                  onSwitch={(course) =>
+                    setSwitched(course.id === draft.courseId ? null : { courseId: course.id, courseCode: course.code })
+                  }
+                />
+              ) : (
+                <Badge tone="mint">{thread.courseCode}</Badge>
+              )}
             </Animated.View>
           ) : (
             <Skeleton className="h-5 w-40 rounded-md" />
