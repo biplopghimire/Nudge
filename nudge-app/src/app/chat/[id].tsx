@@ -174,7 +174,11 @@ export default function Chat() {
         <View className="flex-1">
           {thread ? (
             <Animated.View entering={FadeIn} className="flex-row items-center gap-2">
-              <Text className="shrink text-[17px] font-semibold text-foreground" numberOfLines={1}>
+              {/* For students the title takes the spare width, which pushes the class pill to the right edge. */}
+              <Text
+                className={`${user?.role === "student" ? "flex-1" : "shrink"} text-[17px] font-semibold text-foreground`}
+                numberOfLines={1}
+              >
                 {thread.title}
               </Text>
               {user?.role === "student" ? (
