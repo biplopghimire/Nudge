@@ -8,13 +8,23 @@ import { NudgeMark } from "@/components/brand/nudge-avatar";
 import { Badge, EmptyState, Row } from "@/components/ui/list";
 import { IconButton, LargeTitle, Screen, SectionLabel } from "@/components/ui/screen";
 import { dayGroup, relativeTime } from "@/lib/format";
-import { useThreads } from "@/lib/queries";
+import { useStudentCourses, useThreads } from "@/lib/queries";
 import { usePullToRefresh } from "@/lib/pull-to-refresh";
+import { newChatCourse, startChat } from "@/lib/start-chat";
 
 export default function Chats() {
   const { data, isLoading, refetch } = useThreads();
   const pullToRefresh = usePullToRefresh(refetch);
+  const { data: courseData } = useStudentCourses();
   const [query, setQuery] = useState("");
+
+  function newChat() {
+    // Courses are normally cached from Home. If they haven't loaded, Home is where to pick one.
+    if (!courseData) return router.navigate("/home");
+    const course = newChatCourse(courseData.courses, data?.threads ?? []);
+    if (!course) return router.push("/join");
+    startChat({ courseId: course.id, courseCode: course.code, title: "New chat" });
+  }
 
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -32,7 +42,7 @@ export default function Chats() {
   let index = 0;
   return (
     <Screen tabBar refreshControl={<RefreshControl {...pullToRefresh} />}>
-      <LargeTitle title="Chats" trailing={<IconButton icon="compose" label="New chat" tone="accent" onPress={() => router.navigate("/home")} />} />
+      <LargeTitle title="Chats" trailing={<IconButton icon="compose" label="New chat" tone="accent" onPress={newChat} />} />
 
       <SearchField value={query} onChange={setQuery}>
         <SearchField.Group>
@@ -52,7 +62,7 @@ export default function Chats() {
         <EmptyState
           art={<NudgeMark size={72} />}
           title={query ? "No chats match" : "No chats yet"}
-          body={query ? "Try a different word." : "Pick a course on Home to start your first chat."}
+          body={query ? "Try a different word." : "Tap the pencil above to start your first chat."}
         />
       ) : (
         groups.map(([group, threads]) => (
