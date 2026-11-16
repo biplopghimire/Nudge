@@ -1,16 +1,15 @@
 import { router } from "expo-router";
 import { Button, Skeleton } from "heroui-native";
 import { RefreshControl, Text, View } from "react-native";
-import Animated from "react-native-reanimated";
 
 import { NudgeMark } from "@/components/brand/nudge-avatar";
+import { UpNextCard } from "@/components/home/up-next-card";
 import { Icon } from "@/components/ui/icon";
 import { Badge, EmptyState, Row } from "@/components/ui/list";
 import { LargeTitle, Screen, SectionLabel } from "@/components/ui/screen";
 import { Tappable } from "@/components/ui/tappable";
 import { useAuth } from "@/lib/auth";
-import { dueLabel, greetingDate, initials } from "@/lib/format";
-import { enterRow } from "@/lib/motion";
+import { greetingDate, initials } from "@/lib/format";
 import { useStudentCourses } from "@/lib/queries";
 import { usePullToRefresh } from "@/lib/pull-to-refresh";
 import { startChat } from "@/lib/start-chat";
@@ -41,25 +40,19 @@ export default function Home() {
 
       {isLoading ? (
         <Skeleton className="h-[132px] rounded-3xl" />
-      ) : upNext ? (
-        <Animated.View entering={enterRow(0)} className="rounded-3xl bg-surface-secondary p-5" style={{ borderCurve: "continuous" }}>
-          <Text className="text-[13px] font-medium text-muted">Up next</Text>
-          <Text className="mt-1 text-[22px] font-bold tracking-tight text-foreground">{upNext.title}</Text>
-          <View className="mt-4 flex-row items-center justify-between">
-            <Text className="text-[14px] text-muted">
-              {upNext.courseCode} · {dueLabel(upNext.dueAt)}
-            </Text>
-            <Button
-              size="sm"
-              className="rounded-full px-5"
-              onPress={() =>
-                startChat({ courseId: upNext.courseId, courseCode: upNext.courseCode, assignmentId: upNext.id, title: upNext.shortTitle })
-              }
-            >
-              <Button.Label>Start</Button.Label>
-            </Button>
-          </View>
-        </Animated.View>
+      ) : data && data.courses.length > 0 ? (
+        // With no courses yet, the "No courses yet" state below says what to do instead.
+        <UpNextCard
+          assignment={upNext ?? null}
+          onStart={(assignment) =>
+            startChat({
+              courseId: assignment.courseId,
+              courseCode: assignment.courseCode,
+              assignmentId: assignment.id,
+              title: assignment.shortTitle,
+            })
+          }
+        />
       ) : null}
 
       <SectionLabel>Courses</SectionLabel>
@@ -75,8 +68,12 @@ export default function Home() {
               key={course.id}
               index={index + 1}
               title={course.code}
-              subtitle={`${course.section} · ${course.teacherName}`}
-              trailing={course.nextDue ? <Badge>{course.nextDue}</Badge> : undefined}
+              // Blush marks the course whose assignment is in the Up next card; the rest are mint.
+              trailing={
+                course.nextDue ? (
+                  <Badge tone={course.id === upNext?.courseId ? "blush" : "mint"}>{course.nextDue}</Badge>
+                ) : undefined
+              }
               onPress={() => startChat({ courseId: course.id, courseCode: course.code, title: "New chat" })}
             />
           ))}
