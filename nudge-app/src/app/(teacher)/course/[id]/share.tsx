@@ -66,7 +66,9 @@ export default function ShareCode() {
         </Animated.View>
       </View>
 
-      <Button size="lg" className="rounded-full" onPress={() => router.replace({ pathname: "/course/[id]", params: { id } })}>
+      {/* Opened from the course page, this goes back to that page. Opened after creating a course, there is
+          no course page yet, so it opens one in place of this screen. Either way Back never meets a second copy. */}
+      <Button size="lg" className="rounded-full" onPress={() => router.dismissTo({ pathname: "/course/[id]", params: { id } })}>
         <Button.Label>Done</Button.Label>
       </Button>
     </View>
