@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NudgeMark } from "@/components/brand/nudge-avatar";
 import { AttachSheet, type AttachChoice } from "@/components/chat/attach-sheet";
 import { ClassSwitcher } from "@/components/chat/class-switcher";
-import { Composer, type PendingAttachment } from "@/components/chat/composer";
+import { Composer, ComposerBackdrop, type PendingAttachment } from "@/components/chat/composer";
 import { NudgeReply, SentMessage } from "@/components/chat/messages";
 import { Thinking } from "@/components/chat/thinking";
 import { Badge } from "@/components/ui/list";
@@ -254,6 +254,8 @@ export default function Chat() {
 
       <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }} style={empty ? undefined : { position: "absolute", left: 0, right: 0, bottom: 0 }}>
         <View style={{ paddingBottom: insets.bottom }} onLayout={onComposerLayout}>
+          {/* Messages only scroll under the composer once there are some. */}
+          {empty ? null : <ComposerBackdrop />}
           <Composer
             ref={composerRef}
             value={text}
