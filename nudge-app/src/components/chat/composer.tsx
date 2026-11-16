@@ -1,8 +1,9 @@
 import type { AttachmentSource } from "@api";
 import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { type ComponentRef, forwardRef } from "react";
-import { Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import Animated, { useAnimatedStyle, withSpring, ZoomIn, ZoomOut } from "react-native-reanimated";
 import { useCSSVariable } from "uniwind";
 
@@ -22,6 +23,28 @@ type Props = {
   busy: boolean;
   placeholder?: string;
 };
+
+const FADE = 20;
+
+/**
+ * Frosted backdrop for the whole composer area, edge to edge and down to the bottom of
+ * the screen. Without it only the input pill is blurred, and messages stay sharp in the
+ * gaps beside and below it. A short fade above softens where the blur begins.
+ * Fills its parent, so the parent must wrap the composer and its bottom padding.
+ */
+export function ComposerBackdrop() {
+  const background = useCSSVariable("--background");
+  // The fade needs a 6-digit hex color to build its see-through end from.
+  const hex = typeof background === "string" && /^#[0-9a-f]{6}$/i.test(background) ? background : null;
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {hex ? (
+        <LinearGradient colors={[`${hex}00`, `${hex}b3`]} style={{ position: "absolute", left: 0, right: 0, top: -FADE, height: FADE }} />
+      ) : null}
+      <BlurView intensity={40} tint="systemChromeMaterial" style={StyleSheet.absoluteFill} />
+    </View>
+  );
+}
 
 export const Composer = forwardRef<ComponentRef<typeof View>, Props>(function Composer(
   { value, onChangeText, onSend, onPlus, attachment, onRemoveAttachment, busy, placeholder = "Ask Nudge…" },
