@@ -6,7 +6,7 @@ import { Text, View } from "react-native";
 
 import { Icon } from "@/components/ui/icon";
 import { Row } from "@/components/ui/list";
-import { ProfileHeader, SignOutRow, StatTiles, SwitchRow } from "@/components/ui/profile";
+import { AppearanceControl, ProfileHeader, SignOutRow, StatTiles, SwitchRow } from "@/components/ui/profile";
 import { Screen, SectionLabel } from "@/components/ui/screen";
 import { Tappable } from "@/components/ui/tappable";
 import { api } from "@/lib/api";
@@ -74,6 +74,9 @@ export default function Profile() {
           />
         </>
       ) : null}
+
+      <SectionLabel>Appearance</SectionLabel>
+      <AppearanceControl />
 
       <SignOutRow onPress={signOut} />
     </Screen>

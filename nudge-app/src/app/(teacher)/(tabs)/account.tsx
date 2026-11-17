@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "heroui-native";
 import { View } from "react-native";
 
-import { ProfileHeader, SignOutRow, StatTiles, SwitchRow } from "@/components/ui/profile";
+import { AppearanceControl, ProfileHeader, SignOutRow, StatTiles, SwitchRow } from "@/components/ui/profile";
 import { Screen, SectionLabel } from "@/components/ui/screen";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -59,6 +59,9 @@ export default function Account() {
           />
         </>
       ) : null}
+
+      <SectionLabel>Appearance</SectionLabel>
+      <AppearanceControl />
 
       <SignOutRow onPress={signOut} />
     </Screen>

@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { AppearanceProvider } from "@/lib/appearance";
 
 import "../global.css";
 
@@ -25,9 +26,11 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <KeyboardProvider>
           <HeroUINativeProvider config={{ toast: { defaultProps: { placement: "top" } } }}>
-            <AuthProvider>
-              <Routes />
-            </AuthProvider>
+            <AppearanceProvider>
+              <AuthProvider>
+                <Routes />
+              </AuthProvider>
+            </AppearanceProvider>
           </HeroUINativeProvider>
         </KeyboardProvider>
       </QueryClientProvider>
