@@ -21,6 +21,20 @@ def semester_start(name: str) -> date:
     return date(int(year), month, day)
 
 
+# CMU-style course codes only for now: two-digit department, three-digit number ("67-272").
+# To support other schools later, loosen this to uppercase letters/digits with single
+# spaces or dashes (e.g. "CS 101"), something like r"^[A-Z0-9]+(?:[ -][A-Z0-9]+)*$".
+_COURSE_CODE = re.compile(r"^(\d{2})\D*(\d{3})$")
+
+
+def normalize_course_code(raw: str) -> str:
+    """Normalize '67272', '67 - 272', '67.272' etc. to '67-272'. Raises ValueError otherwise."""
+    match = _COURSE_CODE.match(re.sub(r"\s+", "", raw))
+    if not match:
+        raise ValueError(raw)
+    return f"{match.group(1)}-{match.group(2)}"
+
+
 def semester_sort_key(name: str) -> date:
     try:
         return semester_start(name)

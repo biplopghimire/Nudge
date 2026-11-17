@@ -32,3 +32,18 @@ export function validateAuth(mode: AuthMode, { name, email, password }: AuthFiel
 
   return errors;
 }
+
+// Mirrors normalize_course_code in nudge-api/app/services/common.py.
+// CMU-style codes only for now ("67-272"). To support other schools later, loosen this to
+// uppercase letters/digits with single spaces or dashes (e.g. "CS 101").
+const COURSE_CODE = /^\d{2}-\d{3}$/;
+
+/** Formats input as the teacher types: keeps digits only and puts the dash after the first two. */
+export function formatCourseCode(input: string): string {
+  const digits = input.replace(/\D/g, "").slice(0, 5);
+  return digits.length > 2 ? `${digits.slice(0, 2)}-${digits.slice(2)}` : digits;
+}
+
+export function isValidCourseCode(code: string): boolean {
+  return COURSE_CODE.test(code.trim());
+}

@@ -28,7 +28,7 @@ from app.schemas.teacher import (
     TeacherUserOut,
     TrendingTopicOut,
 )
-from app.services.common import new_id, semester_sort_key, semester_start, utc_now
+from app.services.common import new_id, normalize_course_code, semester_sort_key, semester_start, utc_now
 from app.services.views import Views
 
 JOIN_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O or 1/I
@@ -104,6 +104,10 @@ class TeacherService:
         code, section, semester = code.strip(), section.strip(), semester.strip()
         if not code or not section or not semester:
             raise bad_request("missing_fields", "Course code, section and semester are required.")
+        try:
+            code = normalize_course_code(code)
+        except ValueError:
+            raise bad_request("invalid_course_code", "Course code should look like 'xx-xxx'.")
         try:
             semester_start(semester)
         except ValueError:

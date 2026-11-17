@@ -19,6 +19,7 @@ import { haptics } from "@/lib/haptics";
 import { KIND_ICON, KIND_LABEL, MATERIAL_SOURCES, pickMaterials, type PickedFile } from "@/lib/materials";
 import { layoutSpring, springs } from "@/lib/motion";
 import { keys } from "@/lib/queries";
+import { formatCourseCode, isValidCourseCode } from "@/lib/validation";
 
 const SEMESTERS = ["Fall 2026", "Spring 2027"] as const;
 type Step = "idle" | "creating" | "uploading";
@@ -35,7 +36,7 @@ export default function NewCourse() {
   const [uploaded, setUploaded] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const ready = code.trim().length >= 2 && section.trim().length > 0 && step === "idle";
+  const ready = isValidCourseCode(code) && section.trim().length > 0 && step === "idle";
 
   async function addFiles(source: AttachChoice) {
     const picked = await pickMaterials(source);
@@ -95,7 +96,14 @@ export default function NewCourse() {
         <View className="gap-4">
           <TextField>
             <Label>Course code</Label>
-            <Input value={code} onChangeText={setCode} placeholder="67-272" autoCapitalize="characters" autoFocus />
+            <Input
+              value={code}
+              onChangeText={(text) => setCode(formatCourseCode(text))}
+              placeholder="67-272"
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
+            />
           </TextField>
           <TextField>
             <Label>Section</Label>
