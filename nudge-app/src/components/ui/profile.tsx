@@ -7,9 +7,26 @@ import Animated from "react-native-reanimated";
 import { initials } from "@/lib/format";
 import { haptics } from "@/lib/haptics";
 import { enterRow } from "@/lib/motion";
+import { useAppearance } from "@/lib/appearance";
 
 import { Icon } from "./icon";
+import { Segmented } from "./segmented";
 import { Tappable } from "./tappable";
+
+export function AppearanceControl() {
+  const { appearance, setAppearance } = useAppearance();
+  return (
+    <Segmented
+      options={[
+        { value: "system", label: "System" },
+        { value: "light", label: "Light" },
+        { value: "dark", label: "Dark" },
+      ]}
+      value={appearance}
+      onChange={(choice) => void setAppearance(choice)}
+    />
+  );
+}
 
 export function ProfileHeader({ name, detail }: { name: string; detail: string }) {
   return (
